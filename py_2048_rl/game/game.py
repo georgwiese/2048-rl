@@ -140,7 +140,9 @@ class Game(object):
       print "-" * 25
 
   def state(self):
+    """Return current state."""
     return self._state
 
   def score(self):
+    """Return current score."""
     return self._score
