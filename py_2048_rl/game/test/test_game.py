@@ -22,7 +22,8 @@ def test_init(choice):
 
   # Assert correct number of 0s, 1s and 2s
   game.print_state()
-  assert (np.bincount(game.state.flatten()) == [14, 1, 1]).all()
+  assert (np.bincount(game.state().flatten()) == [14, 1, 1]).all()
+  assert game.score() == 0
 
 
 def test_available_actions():
@@ -49,6 +50,7 @@ def test_available_actions_none_available():
 
   # All actions except left is available
   assert actions == []
+  assert game.game_over()
 
 
 @patch('numpy.random.choice')
@@ -68,4 +70,6 @@ def test_do_action(choice):
                         [6, 6, 8, 3],
                         [1, 2, 3, 8]])
   game.print_state()
-  assert (game.state == new_state).all()
+  assert (game.state() == new_state).all()
+  # Score is 2 ** 6 + 2 ** 8
+  assert game.score() == 320

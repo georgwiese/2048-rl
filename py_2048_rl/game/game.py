@@ -28,14 +28,18 @@ class Game(object):
       initial_score: Score to initialize the Game with.
     """
 
-    self.score = initial_score
+    self._score = initial_score
 
     if state is None:
-      self.state = np.zeros((4, 4), dtype=np.int)
+      self._state = np.zeros((4, 4), dtype=np.int)
       self.add_random_tile()
       self.add_random_tile()
     else:
-      self.state = state
+      self._state = state
+
+  def game_over(self):
+    """Whether the game is over."""
+    return len(self.available_actions()) == 0
 
   def available_actions(self):
     """Computes the set of actions that are available."""
@@ -46,7 +50,7 @@ class Game(object):
     That is, executing it would change the state.
     """
 
-    temp_state = np.rot90(self.state, action)
+    temp_state = np.rot90(self._state, action)
     return self._is_action_available_left(temp_state)
 
   def _is_action_available_left(self, state):
@@ -70,10 +74,10 @@ class Game(object):
   def do_action(self, action):
     """Execute action, add a new tile, update the score & return the reward."""
 
-    temp_state = np.rot90(self.state, action)
+    temp_state = np.rot90(self._state, action)
     reward = self._do_action_left(temp_state)
-    self.state = np.rot90(temp_state, -action)
-    self.score += reward
+    self._state = np.rot90(temp_state, -action)
+    self._score += reward
 
     self.add_random_tile()
 
@@ -114,12 +118,12 @@ class Game(object):
   def add_random_tile(self):
     """Adds a random tile to the grid. Assumes that it has empty fields."""
 
-    x_pos, y_pos = np.where(self.state == 0)
+    x_pos, y_pos = np.where(self._state == 0)
     assert len(x_pos) != 0
     empty_index = np.random.choice(len(x_pos))
     value = np.random.choice([1, 2], p=[0.9, 0.1])
 
-    self.state[x_pos[empty_index], y_pos[empty_index]] = value
+    self._state[x_pos[empty_index], y_pos[empty_index]] = value
 
   def print_state(self):
     """Prints the current state."""
@@ -132,5 +136,11 @@ class Game(object):
 
     print "-" * 25
     for row in range(4):
-      print "|" + "|".join([tile_string(v) for v in self.state[row, :]]) + "|"
+      print "|" + "|".join([tile_string(v) for v in self._state[row, :]]) + "|"
       print "-" * 25
+
+  def state(self):
+    return self._state
+
+  def score(self):
+    return self._score
