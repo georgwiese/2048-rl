@@ -60,6 +60,8 @@ def loss(q_values, targets, actions):
   Returns:
     loss: Loss tensor of type float.
   """
+  tf.scalar_summary("Average Target", tf.reduce_mean(targets))
+
   # Get Q-Value prodections for the given actions
   batch_size = tf.shape(q_values)[0]
   q_value_indices = tf.range(0, batch_size) * NUM_ACTIONS + actions

@@ -21,7 +21,7 @@ EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
-TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
+TRAIN_DIR = "/Users/georg/coding/2048-rl/train2"
 
 def collect_experience(num_games, strategy):
   """Plays num_games random games, returns all collected experiences."""
@@ -47,12 +47,12 @@ def get_experiences(get_q_values):
 def get_batches(experiences, run_inference):
   """Computes state_batch, targets, actions."""
 
-  assert len(experiences) == BATCH_SIZE
-  state_batch = np.zeros((BATCH_SIZE, 16))
-  next_state_batch = np.zeros((BATCH_SIZE, 16))
-  targets = np.zeros((BATCH_SIZE,), dtype=np.float)
-  actions = np.zeros((BATCH_SIZE,), dtype=np.int)
-  game_over_batch = np.zeros((BATCH_SIZE,), dtype=np.bool)
+  batch_size = len(experiences)
+  state_batch = np.zeros((batch_size, 16))
+  next_state_batch = np.zeros((batch_size, 16))
+  targets = np.zeros((batch_size,), dtype=np.float)
+  actions = np.zeros((batch_size,), dtype=np.int)
+  game_over_batch = np.zeros((batch_size,), dtype=np.bool)
 
   for i, experience in enumerate(experiences):
     state_batch[i, :] = experience.state.flatten() * STATE_NORMALIZE_FACTOR
@@ -75,9 +75,11 @@ def run_training():
 
   with tf.Graph().as_default():
     state_batch_placeholder = tf.placeholder(
-        tf.float32, shape=(BATCH_SIZE, model.NUM_TILES))
-    targets_placeholder = tf.placeholder(tf.float32, shape=(BATCH_SIZE,))
-    actions_placeholder = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
+        tf.float32, shape=(None, model.NUM_TILES))
+    targets_placeholder = tf.placeholder(tf.float32, shape=(None,))
+    actions_placeholder = tf.placeholder(tf.int32, shape=(None,))
+    placeholders = (state_batch_placeholder, targets_placeholder,
+                    actions_placeholder)
 
     q_values = model.inference(state_batch_placeholder, 20, 20)
     loss = model.loss(q_values, targets_placeholder, actions_placeholder)
@@ -94,13 +96,18 @@ def run_training():
                                             graph_def=sess.graph_def,
                                             flush_secs=10)
 
+    def run_inference(state_batch):
+      """Run inference"""
+      return sess.run(q_values,
+                      feed_dict={state_batch_placeholder: state_batch})
+
     def get_q_values(state):
       state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
-      state_batch = np.array([state_vector] * BATCH_SIZE)
-      q_values_batch = sess.run(q_values,
-                                feed_dict={
-                                    state_batch_placeholder: state_batch})
+      state_batch = np.array([state_vector])
+      q_values_batch = run_inference(state_batch)
       return q_values_batch[0]
+
+    test_experiences = collect_experience(100, random_strategy)
 
     global_step = 0
     for n_round, experiences in enumerate(get_experiences(get_q_values)):
@@ -116,11 +123,6 @@ def run_training():
         batch_indices = experience_indices[step * BATCH_SIZE :
                                            (step + 1) * BATCH_SIZE]
         batch_experiences = [experiences[i] for i in batch_indices]
-
-        def run_inference(state_batch):
-          """Run inference"""
-          return sess.run(q_values,
-                          feed_dict={state_batch_placeholder: state_batch})
 
         state_batch, targets, actions = get_batches(batch_experiences,
                                                     run_inference)
@@ -141,18 +143,29 @@ def run_training():
           print('Step %d: Games: %d loss = %.6f (%.3f sec), avg target: %f' % (
               global_step, (n_round+1) * 100, avg_loss, duration,
               np.average(targets)))
-          summary_str = sess.run(summary_op, feed_dict=feed_dict)
-          summary_writer.add_summary(summary_str, global_step)
 
         if global_step % 1000 == 0 and global_step != 0:
           saver.save(sess, TRAIN_DIR + "/checkpoint", global_step=global_step)
-          print('Average Score: %f' % evaluate(get_q_values,
+          print('Average Score: %f' % evaluate(get_q_values, sess, placeholders,
+                                               test_experiences, summary_op,
+                                               run_inference,
+                                               summary_writer, global_step,
                                                global_step % 10000 == 0))
 
         global_step += 1
 
 
-def evaluate(get_q_values, verbose=False):
+def evaluate(get_q_values, session, placeholders, test_experiences, summary_op,
+             run_inference, summary_writer, global_step, verbose=False):
+
+  state_batch, targets, actions = get_batches(test_experiences, run_inference)
+  state_batch_p, targets_p, actions_p = placeholders
+  summary_str = session.run(summary_op, feed_dict={
+      state_batch_p: state_batch,
+      targets_p: targets,
+      actions_p: actions,
+  })
+  summary_writer.add_summary(summary_str, global_step)
 
   greedy_strategy = make_greedy_strategy(get_q_values)
 
