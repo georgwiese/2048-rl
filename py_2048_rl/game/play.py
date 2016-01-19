@@ -1,4 +1,4 @@
-"""Algorithms to play 2048 and collect experience."""
+"""Algorithms and strategies to play 2048 and collect experience."""
 
 from py_2048_rl.game.game import Game, ACTION_NAMES
 
@@ -31,11 +31,6 @@ class Experience(object):
 
   def __repr__(self):
     return self.__str__()
-
-
-def strategy_random(_, actions):
-  """Strategy that always chooses actions at random."""
-  return np.random.choice(actions)
 
 
 def play(strategy, verbose=False):
@@ -76,3 +71,31 @@ def play(strategy, verbose=False):
     print "Game over."
 
   return game.score(), experiences
+
+
+def random_strategy(_, actions):
+  """Strategy that always chooses actions at random."""
+  return np.random.choice(actions)
+
+
+def make_greedy_strategy(get_q_values):
+
+  def greedy_strategy(state, actions):
+    q_values = get_q_values(state)
+    sorted_actions = np.argsort(q_values)
+    return [a for a in sorted_actions if a in actions][0]
+
+  return greedy_strategy
+
+
+def make_epsilon_greedy_strategy(get_q_values, epsilon):
+
+  greedy_strategy = make_greedy_strategy(get_q_values)
+
+  def epsilon_greedy_strategy(state, actions):
+    do_random_action = np.random.choice([True, False], p=[epsilon, 1 - epsilon])
+    if do_random_action:
+      return random_strategy(state, actions)
+    return greedy_strategy(state, actions)
+
+  return epsilon_greedy_strategy

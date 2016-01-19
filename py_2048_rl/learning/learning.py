@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import time
 
-from py_2048_rl.game.play import play, strategy_random
+from py_2048_rl.game.play import play, random_strategy, make_greedy_strategy, make_epsilon_greedy_strategy
 from py_2048_rl.learning import model
 
 import tensorflow.python.platform
@@ -23,19 +23,25 @@ REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
 TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
 
-def collect_experience(num_games):
+def collect_experience(num_games, strategy):
   """Plays num_games random games, returns all collected experiences."""
   experiences = []
   for _ in range(num_games):
-    _, new_experiences = play(strategy_random)
+    _, new_experiences = play(strategy)
     experiences += new_experiences
   return experiences
 
 
-def get_experiences():
+def get_experiences(get_q_values):
   """Yields experiences from 100 random games."""
+  i = 0
   while True:
-    yield collect_experience(100)
+    epsilon = max(0, 1.0 - i / 100000.0)
+    print("Collecting experience, epsilon: %f" % epsilon)
+
+    strategy = make_epsilon_greedy_strategy(get_q_values, epsilon)
+    yield collect_experience(100, strategy)
+    i += 1
 
 
 def get_batches(experiences, run_inference):
@@ -88,8 +94,16 @@ def run_training():
                                             graph_def=sess.graph_def,
                                             flush_secs=10)
 
+    def get_q_values(state):
+      state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
+      state_batch = np.array([state_vector] * BATCH_SIZE)
+      q_values_batch = sess.run(q_values,
+                                feed_dict={
+                                    state_batch_placeholder: state_batch})
+      return q_values_batch[0]
+
     global_step = 0
-    for n_round, experiences in enumerate(get_experiences()):
+    for n_round, experiences in enumerate(get_experiences(get_q_values)):
 
       steps = len(experiences) // BATCH_SIZE
       experience_indices = np.random.permutation(len(experiences))
@@ -132,22 +146,15 @@ def run_training():
 
         if global_step % 1000 == 0 and global_step != 0:
           saver.save(sess, TRAIN_DIR + "/checkpoint", global_step=global_step)
-          print('Average Score: %f' % evaluate(
-              sess, q_values, state_batch_placeholder,
-              global_step % 10000 == 0))
+          print('Average Score: %f' % evaluate(get_q_values,
+                                               global_step % 10000 == 0))
 
         global_step += 1
 
 
-def evaluate(session, q_values_tensor, state_batch_placeholder, verbose=False):
+def evaluate(get_q_values, verbose=False):
 
-  def greedy_strategy(state, actions):
-    state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
-    state_batch = np.array([state_vector] * BATCH_SIZE)
-    q_values = session.run(q_values_tensor,
-                           feed_dict={state_batch_placeholder: state_batch})
-    sorted_actions = np.argsort(q_values[0, :])
-    return [a for a in sorted_actions if a in actions][0]
+  greedy_strategy = make_greedy_strategy(get_q_values)
 
   if verbose:
     play(greedy_strategy, True)

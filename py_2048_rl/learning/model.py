@@ -79,7 +79,7 @@ def training(loss, learning_rate):
   Returns:
     train_op: The Op for training.
   """
-  tf.scalar_summary(loss.op.name, loss)
+  tf.scalar_summary("Loss", loss)
   optimizer = tf.train.GradientDescentOptimizer(learning_rate)
   global_step = tf.Variable(0, name='global_step', trainable=False)
   train_op = optimizer.minimize(loss, global_step=global_step)
