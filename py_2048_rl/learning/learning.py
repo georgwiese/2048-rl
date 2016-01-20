@@ -7,7 +7,7 @@ from __future__ import print_function
 import time
 
 from py_2048_rl.game.play import play, random_strategy, make_greedy_strategy, make_epsilon_greedy_strategy
-from py_2048_rl.learning import model
+from py_2048_rl.learning.model import FeedModel
 
 import tensorflow.python.platform
 import tensorflow as tf
@@ -15,7 +15,6 @@ import tensorflow as tf
 import numpy as np
 
 BATCH_SIZE = 20
-LEARNING_RATE = 0.0001
 
 EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
@@ -74,32 +73,19 @@ def run_training():
   """Run training"""
 
   with tf.Graph().as_default():
-    state_batch_placeholder = tf.placeholder(
-        tf.float32, shape=(None, model.NUM_TILES))
-    targets_placeholder = tf.placeholder(tf.float32, shape=(None,))
-    actions_placeholder = tf.placeholder(tf.int32, shape=(None,))
-    placeholders = (state_batch_placeholder, targets_placeholder,
-                    actions_placeholder)
-
-    q_values = model.inference(state_batch_placeholder, 20, 20)
-    loss = model.loss(q_values, targets_placeholder, actions_placeholder)
-    train_op = model.training(loss, LEARNING_RATE)
-
-    summary_op = tf.merge_all_summaries()
+    model = FeedModel()
     saver = tf.train.Saver()
     sess = tf.Session()
-
-    init = tf.initialize_all_variables()
-    sess.run(init)
-
     summary_writer = tf.train.SummaryWriter(TRAIN_DIR,
                                             graph_def=sess.graph_def,
                                             flush_secs=10)
 
+    sess.run(model.init)
+
     def run_inference(state_batch):
       """Run inference"""
-      return sess.run(q_values,
-                      feed_dict={state_batch_placeholder: state_batch})
+      return sess.run(model.q_values,
+                      feed_dict={model.state_batch_placeholder: state_batch})
 
     def get_q_values(state):
       state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
@@ -127,14 +113,14 @@ def run_training():
         state_batch, targets, actions = get_batches(batch_experiences,
                                                     run_inference)
 
-        feed_dict = {
-            state_batch_placeholder: state_batch,
-            targets_placeholder: targets,
-            actions_placeholder: actions,
-        }
-        [loss_value, _] = sess.run([loss, train_op], feed_dict=feed_dict)
-        loss_sum += loss_value
+        [loss_value, _] = sess.run(
+            [model.loss, model.train_op],
+            feed_dict={
+                model.state_batch_placeholder: state_batch,
+                model.targets_placeholder: targets,
+                model.actions_placeholder: actions,})
 
+        loss_sum += loss_value
         duration = time.time() - start_time
 
         if global_step % 500 == 0 and global_step != 0:
@@ -144,23 +130,22 @@ def run_training():
               global_step, (n_round+1) * 100, avg_loss, duration,
               np.average(targets)))
 
-        if global_step % 10000 == 0 and global_step != 0:
+        if global_step % 1000 == 0 and global_step != 0:
           saver.save(sess, TRAIN_DIR + "/checkpoint", global_step=global_step)
-          print('Average Score: %f' % evaluate(get_q_values, sess, placeholders,
-                                               test_experiences, summary_op,
-                                               run_inference,
+          print('Average Score: %f' % evaluate(run_inference, get_q_values,
+                                               sess, model, test_experiences,
                                                summary_writer, global_step,
                                                True))
 
         global_step += 1
 
 
-def evaluate(get_q_values, session, placeholders, test_experiences, summary_op,
-             run_inference, summary_writer, global_step, verbose=False):
+def evaluate(run_inference, get_q_values, session, model, test_experiences,
+             summary_writer, global_step, verbose=False):
 
   state_batch, targets, actions = get_batches(test_experiences, run_inference)
-  state_batch_p, targets_p, actions_p = placeholders
-  summary_str = session.run(summary_op, feed_dict={
+  state_batch_p, targets_p, actions_p = model.placeholders
+  summary_str = session.run(model.summary_op, feed_dict={
       state_batch_p: state_batch,
       targets_p: targets,
       actions_p: actions,

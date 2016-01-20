@@ -12,6 +12,30 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
+LEARNING_RATE = 0.0001
+
+
+class FeedModel(object):
+  """Class to construct and collect all relevant tensors of the model."""
+
+  def __init__(self):
+    self.state_batch_placeholder = tf.placeholder(
+        tf.float32, shape=(None, NUM_TILES))
+    self.targets_placeholder = tf.placeholder(tf.float32, shape=(None,))
+    self.actions_placeholder = tf.placeholder(tf.int32, shape=(None,))
+    self.placeholders = (self.state_batch_placeholder,
+                         self.targets_placeholder,
+                         self.actions_placeholder)
+
+    self.q_values = inference(self.state_batch_placeholder, 20, 20)
+    self.loss = loss(self.q_values, self.targets_placeholder,
+                     self.actions_placeholder)
+    self.train_op = training(self.loss, LEARNING_RATE)
+
+    self.init = tf.initialize_all_variables()
+    self.summary_op = tf.merge_all_summaries()
+
+
 
 def inference(state_batch, hidden1_units, hidden2_units):
   """Build inference model.
