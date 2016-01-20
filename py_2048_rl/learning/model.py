@@ -31,11 +31,16 @@ class FeedModel(object):
                                           [30, 20, 20])
     self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
-    self.train_op, self.global_step = build_train_op(self.loss)
+    self.train_op, self.global_step, self.learning_rate = (
+        build_train_op(self.loss))
+
+    tf.scalar_summary("Average Target",
+                      tf.reduce_mean(self.targets_placeholder))
+    tf.scalar_summary("Learning Rate", self.learning_rate)
+    tf.scalar_summary("Loss", self.loss)
 
     self.init = tf.initialize_all_variables()
     self.summary_op = tf.merge_all_summaries()
-
 
 
 def build_inference_graph(state_batch, hidden_sizes):
@@ -83,6 +88,11 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size):
                           name='weights')
     biases = tf.Variable(tf.zeros([layer_size]), name='biases')
     output_batch = tf.nn.relu(tf.matmul(input_batch, weights) + biases)
+
+    tf.histogram_summary("Weights " + name, weights)
+    tf.histogram_summary("Biases " + name, biases)
+    tf.histogram_summary("Activations " + name, output_batch)
+
     return output_batch
 
 
@@ -99,8 +109,6 @@ def build_loss(q_values, targets, actions):
   Returns:
     loss: Loss tensor of type float.
   """
-  tf.scalar_summary("Average Target", tf.reduce_mean(targets))
-
   # Get Q-Value prodections for the given actions
   batch_size = tf.shape(q_values)[0]
   q_value_indices = tf.range(0, batch_size) * NUM_ACTIONS + actions
@@ -117,15 +125,12 @@ def build_train_op(loss):
     loss: Loss tensor, from loss().
 
   Returns:
-    train_op, global_step: The Op for training & global step Tensor.
+    train_op, global_step, learning_rate.
   """
-  tf.scalar_summary("Loss", loss)
-
   global_step = tf.Variable(0, name='global_step', trainable=False)
   learning_rate = tf.train.exponential_decay(
       INIT_LEARNING_RATE, global_step, 100000, LR_DECAY_PER_100K)
-  tf.scalar_summary("Learning Rate", learning_rate)
 
   optimizer = tf.train.GradientDescentOptimizer(learning_rate)
   train_op = optimizer.minimize(loss, global_step=global_step)
-  return train_op, global_step
+  return train_op, global_step, learning_rate
