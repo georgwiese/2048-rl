@@ -9,6 +9,7 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
+WEIGHT_INIT_SCALE = 0.01
 LEARNING_RATE = 0.0001
 
 
@@ -25,7 +26,8 @@ class FeedModel(object):
                          self.targets_placeholder,
                          self.actions_placeholder)
 
-    self.q_values = build_inference_graph(self.state_batch_placeholder, 20, 20)
+    self.q_values = build_inference_graph(self.state_batch_placeholder,
+                                          [30, 20, 20])
     self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
     self.train_op = build_train_op(self.loss, LEARNING_RATE)
@@ -35,38 +37,52 @@ class FeedModel(object):
 
 
 
-def build_inference_graph(state_batch, hidden1_units, hidden2_units):
+def build_inference_graph(state_batch, hidden_sizes):
   """Build inference model.
 
   Args:
     state_batch: [batch_size, NUM_TILES] float Tensor.
-    hidden1_units: Size of the first hidden layer.
-    hidden2_units: Size of the second hidden layer.
+    hidden_sizes: Array of numbers where len(hidden_sizes) is the number of
+        hidden layers and hidden_sizes[i] is the number of hidden units in the
+        ith layer.
 
   Returns:
     q_values: Output tensor with the computed Q-Values.
   """
-  with tf.name_scope('hidden1'):
-    weights = tf.Variable(
-        tf.truncated_normal([NUM_TILES, hidden1_units], stddev=0.01),
-        name='weights')
-    biases = tf.Variable(tf.zeros([hidden1_units]), name='biases')
-    hidden1 = tf.nn.relu(tf.matmul(state_batch, weights) + biases)
+  input_batch = state_batch
+  input_size = NUM_TILES
 
-  with tf.name_scope('hidden2'):
-    weights = tf.Variable(
-        tf.truncated_normal([hidden1_units, hidden2_units], stddev=0.01),
-        name='weights')
-    biases = tf.Variable(tf.zeros([hidden2_units]), name='biases')
-    hidden2 = tf.nn.relu(tf.matmul(hidden1, weights) + biases)
+  for i, hidden_size in enumerate(hidden_sizes):
+    hidden_output_i = build_fully_connected_layer(
+        'hidden' + str(i), input_batch, input_size, hidden_size)
 
-  with tf.name_scope('q_values'):
-    weights = tf.Variable(
-        tf.truncated_normal([hidden2_units, NUM_ACTIONS], stddev=0.01),
-        name='weights')
-    biases = tf.Variable(tf.zeros([NUM_ACTIONS]), name='biases')
-    q_values = tf.matmul(hidden2, weights) + biases
-  return q_values
+    input_batch = hidden_output_i
+    input_size = hidden_size
+
+  return build_fully_connected_layer('q_values', input_batch, input_size,
+                                     NUM_ACTIONS)
+
+
+def build_fully_connected_layer(name, input_batch, input_size, layer_size):
+  """Builds a fully connected ReLU layer.
+
+  Args:
+    name: Name of the layer (-> Variable scope).
+    input_batch: [batch_size, input_size] Tensor that this layer is
+        connected to.
+    input_size: Number of input units.
+    layer_size: Number of units in this layer.
+
+  Returns:
+    The [batch_size, layer_size] output_batch Tensor.
+  """
+  with tf.name_scope(name):
+    weights = tf.Variable(tf.truncated_normal([input_size, layer_size],
+                                              stddev=WEIGHT_INIT_SCALE),
+                          name='weights')
+    biases = tf.Variable(tf.zeros([layer_size]), name='biases')
+    output_batch = tf.nn.relu(tf.matmul(input_batch, weights) + biases)
+    return output_batch
 
 
 def build_loss(q_values, targets, actions):
