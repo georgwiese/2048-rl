@@ -9,9 +9,9 @@ import tensorflow as tf
 def test_loss():
   q_values = tf.constant([[1, 2, 3, 0],
                           [4, 5, 6, 0],
-                          [7, 8, 9, 0]])
-  targets = tf.constant([10, 11, 12])
-  actions = tf.constant([2, 1, 0], dtype=tf.int32, shape=[3])
+                          [7, 8, 9, 0]], dtype=tf.float32)
+  targets = tf.constant([10, 11, 12], dtype=tf.float32)
+  actions = tf.constant([2, 1, 0], dtype=tf.int32)
 
   loss_tensor = loss(q_values, targets, actions)
   with tf.Session() as session:
