@@ -3,9 +3,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math
-
-import tensorflow.python.platform
 import tensorflow as tf
 
 
@@ -15,6 +12,7 @@ NUM_ACTIONS = 4
 LEARNING_RATE = 0.0001
 
 
+# pylint: disable=too-many-instance-attributes,too-few-public-methods
 class FeedModel(object):
   """Class to construct and collect all relevant tensors of the model."""
 
@@ -27,17 +25,17 @@ class FeedModel(object):
                          self.targets_placeholder,
                          self.actions_placeholder)
 
-    self.q_values = inference(self.state_batch_placeholder, 20, 20)
-    self.loss = loss(self.q_values, self.targets_placeholder,
+    self.q_values = build_inference_graph(self.state_batch_placeholder, 20, 20)
+    self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
-    self.train_op = training(self.loss, LEARNING_RATE)
+    self.train_op = build_train_op(self.loss, LEARNING_RATE)
 
     self.init = tf.initialize_all_variables()
     self.summary_op = tf.merge_all_summaries()
 
 
 
-def inference(state_batch, hidden1_units, hidden2_units):
+def build_inference_graph(state_batch, hidden1_units, hidden2_units):
   """Build inference model.
 
   Args:
@@ -71,7 +69,7 @@ def inference(state_batch, hidden1_units, hidden2_units):
   return q_values
 
 
-def loss(q_values, targets, actions):
+def build_loss(q_values, targets, actions):
   """Calculates the loss from the Q-Values, targets and actions.
 
   Args:
@@ -95,7 +93,7 @@ def loss(q_values, targets, actions):
   return tf.reduce_sum(tf.pow(relevant_q_values - targets, 2)) / 2
 
 
-def training(loss, learning_rate):
+def build_train_op(loss, learning_rate):
   """Sets up the training Ops.
 
   Args:

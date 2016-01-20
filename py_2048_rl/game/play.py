@@ -79,8 +79,10 @@ def random_strategy(_, actions):
 
 
 def make_greedy_strategy(get_q_values):
+  """Makes greedy_strategy."""
 
   def greedy_strategy(state, actions):
+    """Strategy that always picks the action of maximum Q(state, action)."""
     q_values = get_q_values(state)
     sorted_actions = np.argsort(q_values)
     return [a for a in sorted_actions if a in actions][0]
@@ -89,10 +91,12 @@ def make_greedy_strategy(get_q_values):
 
 
 def make_epsilon_greedy_strategy(get_q_values, epsilon):
+  """Makes epsilon_greedy_strategy."""
 
   greedy_strategy = make_greedy_strategy(get_q_values)
 
   def epsilon_greedy_strategy(state, actions):
+    """Picks random action with prob. epsilon, otherwise greedy_strategy."""
     do_random_action = np.random.choice([True, False], p=[epsilon, 1 - epsilon])
     if do_random_action:
       return random_strategy(state, actions)

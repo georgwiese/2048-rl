@@ -9,7 +9,6 @@ import time
 from py_2048_rl.game.play import play, random_strategy, make_greedy_strategy, make_epsilon_greedy_strategy
 from py_2048_rl.learning.model import FeedModel
 
-import tensorflow.python.platform
 import tensorflow as tf
 
 import numpy as np
@@ -83,11 +82,12 @@ def run_training():
     sess.run(model.init)
 
     def run_inference(state_batch):
-      """Run inference"""
+      """Run inference on a given state_batch. Returns a q value batch."""
       return sess.run(model.q_values,
                       feed_dict={model.state_batch_placeholder: state_batch})
 
     def get_q_values(state):
+      """Run inference an a single (4, 4) state matrix."""
       state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
       state_batch = np.array([state_vector])
       q_values_batch = run_inference(state_batch)
@@ -141,6 +141,7 @@ def run_training():
 
 def write_summaries(session, run_inference, model, test_experiences,
                     summary_writer, global_step):
+  """Writes summaries by running the model on test_experiences."""
 
   state_batch, targets, actions = get_batches(test_experiences, run_inference)
   state_batch_p, targets_p, actions_p = model.placeholders
@@ -153,6 +154,7 @@ def write_summaries(session, run_inference, model, test_experiences,
 
 
 def evaluate(get_q_values, verbose=False):
+  """Plays 100 games with greedy_strategy, returns average score."""
 
   greedy_strategy = make_greedy_strategy(get_q_values)
 
@@ -167,6 +169,7 @@ def evaluate(get_q_values, verbose=False):
 
 
 def main(_):
+  """Main function."""
   run_training()
 
 
