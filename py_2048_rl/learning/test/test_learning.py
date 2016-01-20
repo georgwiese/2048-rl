@@ -9,7 +9,7 @@ import numpy as np
 
 # pylint: disable=missing-docstring
 
-def test_get_batches():
+def test_experiences_to_batches():
   learning.BATCH_SIZE = 2
 
   state1 = np.arange(16).reshape((4, 4))
@@ -21,7 +21,7 @@ def test_get_batches():
   run_inference = Mock(side_effect=[np.array([[1, 2, 3],
                                               [6, 5, 4]])])
 
-  state_batch, targets, actions = learning.get_batches(
+  state_batch, targets, actions = learning.experiences_to_batches(
       experiences, run_inference)
 
   next_state_batch = np.array([state2.flatten(), state3.flatten()]) / 15.0

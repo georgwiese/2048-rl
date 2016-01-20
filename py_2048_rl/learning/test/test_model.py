@@ -1,6 +1,6 @@
 """Tests for Model."""
 
-from py_2048_rl.learning.model import loss
+from py_2048_rl.learning.model import build_loss
 
 import tensorflow as tf
 
@@ -13,7 +13,7 @@ def test_loss():
   targets = tf.constant([10, 11, 12], dtype=tf.float32)
   actions = tf.constant([2, 1, 0], dtype=tf.int32)
 
-  loss_tensor = loss(q_values, targets, actions)
+  loss_tensor = build_loss(q_values, targets, actions)
   with tf.Session() as session:
     loss_value = session.run(loss_tensor)
 

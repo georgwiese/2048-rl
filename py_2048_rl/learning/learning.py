@@ -4,9 +4,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import time
+import itertools
 
-from py_2048_rl.game.play import play, random_strategy, make_greedy_strategy, make_epsilon_greedy_strategy
+from py_2048_rl.game import play
 from py_2048_rl.learning.model import FeedModel
 
 import tensorflow as tf
@@ -23,26 +23,37 @@ TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
 
 def collect_experience(num_games, strategy):
   """Plays num_games random games, returns all collected experiences."""
+
   experiences = []
   for _ in range(num_games):
-    _, new_experiences = play(strategy)
+    _, new_experiences = play.play(strategy)
     experiences += new_experiences
   return experiences
 
 
-def get_experiences(get_q_values):
-  """Yields experiences from 100 random games."""
-  i = 0
-  while True:
+def get_batches(get_q_values, run_inference):
+  """Yields training batches from 100 epsilon-greedy games, in random order."""
+
+  for i in itertools.count():
     epsilon = max(0, 1.0 - i / 1000.0)
     print("Collecting experience, epsilon: %f" % epsilon)
+    print("Games: %d" % ((i + 1) * 100))
 
-    strategy = make_epsilon_greedy_strategy(get_q_values, epsilon)
-    yield collect_experience(100, strategy)
-    i += 1
+    strategy = play.make_epsilon_greedy_strategy(get_q_values, epsilon)
+    experiences = collect_experience(100, strategy)
+
+    steps = len(experiences) // BATCH_SIZE
+    experience_indices = np.random.permutation(len(experiences))
+
+    for step in range(steps):
+      batch_indices = experience_indices[step * BATCH_SIZE :
+                                         (step + 1) * BATCH_SIZE]
+      batch_experiences = [experiences[i] for i in batch_indices]
+
+      yield experiences_to_batches(batch_experiences, run_inference)
 
 
-def get_batches(experiences, run_inference):
+def experiences_to_batches(experiences, run_inference):
   """Computes state_batch, targets, actions."""
 
   batch_size = len(experiences)
@@ -93,57 +104,32 @@ def run_training():
       q_values_batch = run_inference(state_batch)
       return q_values_batch[0]
 
-    test_experiences = collect_experience(100, random_strategy)
+    test_experiences = collect_experience(100, play.random_strategy)
 
     global_step = 0
-    for n_round, experiences in enumerate(get_experiences(get_q_values)):
+    for state_batch, targets, actions in get_batches(
+        get_q_values, run_inference):
 
-      steps = len(experiences) // BATCH_SIZE
-      experience_indices = np.random.permutation(len(experiences))
+      session.run(model.train_op, feed_dict={
+          model.state_batch_placeholder: state_batch,
+          model.targets_placeholder: targets,
+          model.actions_placeholder: actions,})
 
-      loss_sum = 0
+      if global_step % 1000 == 0 and global_step != 0:
+        saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
+        write_summaries(session, run_inference, model, test_experiences,
+                        summary_writer, global_step)
+        print('Average Score: %f' % evaluate(get_q_values))
 
-      for step in range(steps):
-        start_time = time.time()
-
-        batch_indices = experience_indices[step * BATCH_SIZE :
-                                           (step + 1) * BATCH_SIZE]
-        batch_experiences = [experiences[i] for i in batch_indices]
-
-        state_batch, targets, actions = get_batches(batch_experiences,
-                                                    run_inference)
-
-        [loss_value, _] = session.run(
-            [model.loss, model.train_op],
-            feed_dict={
-                model.state_batch_placeholder: state_batch,
-                model.targets_placeholder: targets,
-                model.actions_placeholder: actions,})
-
-        loss_sum += loss_value
-        duration = time.time() - start_time
-
-        if global_step % 500 == 0 and global_step != 0:
-          avg_loss = loss_sum / 500
-          loss_sum = 0
-          print('Step %d: Games: %d loss = %.6f (%.3f sec), avg target: %f' % (
-              global_step, (n_round+1) * 100, avg_loss, duration,
-              np.average(targets)))
-
-        if global_step % 1000 == 0 and global_step != 0:
-          saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
-          write_summaries(session, run_inference, model, test_experiences,
-                          summary_writer, global_step)
-          print('Average Score: %f' % evaluate(get_q_values, verbose=True))
-
-        global_step += 1
+      global_step += 1
 
 
 def write_summaries(session, run_inference, model, test_experiences,
                     summary_writer, global_step):
   """Writes summaries by running the model on test_experiences."""
 
-  state_batch, targets, actions = get_batches(test_experiences, run_inference)
+  state_batch, targets, actions = experiences_to_batches(
+      test_experiences, run_inference)
   state_batch_p, targets_p, actions_p = model.placeholders
   summary_str = session.run(model.summary_op, feed_dict={
       state_batch_p: state_batch,
@@ -156,20 +142,21 @@ def write_summaries(session, run_inference, model, test_experiences,
 def evaluate(get_q_values, verbose=False):
   """Plays 100 games with greedy_strategy, returns average score."""
 
-  greedy_strategy = make_greedy_strategy(get_q_values)
+  greedy_strategy = play.make_greedy_strategy(get_q_values)
 
   if verbose:
-    play(greedy_strategy, True)
+    play.play(greedy_strategy, True)
 
   scores = []
   for _ in range(100):
-    score, _ = play(greedy_strategy)
+    score, _ = play.play(greedy_strategy)
     scores.append(score)
   return np.average(scores)
 
 
 def main(_):
   """Main function."""
+
   run_training()
 
 
