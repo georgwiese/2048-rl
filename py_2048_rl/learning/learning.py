@@ -21,7 +21,7 @@ EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
-TRAIN_DIR = "/Users/georg/coding/2048-rl/train2"
+TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
 
 def collect_experience(num_games, strategy):
   """Plays num_games random games, returns all collected experiences."""
@@ -36,7 +36,7 @@ def get_experiences(get_q_values):
   """Yields experiences from 100 random games."""
   i = 0
   while True:
-    epsilon = max(0, 1.0 - i / 100000.0)
+    epsilon = max(0, 1.0 - i / 1000.0)
     print("Collecting experience, epsilon: %f" % epsilon)
 
     strategy = make_epsilon_greedy_strategy(get_q_values, epsilon)
@@ -144,13 +144,13 @@ def run_training():
               global_step, (n_round+1) * 100, avg_loss, duration,
               np.average(targets)))
 
-        if global_step % 1000 == 0 and global_step != 0:
+        if global_step % 10000 == 0 and global_step != 0:
           saver.save(sess, TRAIN_DIR + "/checkpoint", global_step=global_step)
           print('Average Score: %f' % evaluate(get_q_values, sess, placeholders,
                                                test_experiences, summary_op,
                                                run_inference,
                                                summary_writer, global_step,
-                                               global_step % 10000 == 0))
+                                               True))
 
         global_step += 1
 
