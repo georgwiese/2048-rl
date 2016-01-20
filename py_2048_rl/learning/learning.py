@@ -132,16 +132,15 @@ def run_training():
 
         if global_step % 1000 == 0 and global_step != 0:
           saver.save(sess, TRAIN_DIR + "/checkpoint", global_step=global_step)
-          print('Average Score: %f' % evaluate(run_inference, get_q_values,
-                                               sess, model, test_experiences,
-                                               summary_writer, global_step,
-                                               True))
+          write_summaries(sess, run_inference, model, test_experiences,
+                          summary_writer, global_step)
+          print('Average Score: %f' % evaluate(get_q_values, verbose=True))
 
         global_step += 1
 
 
-def evaluate(run_inference, get_q_values, session, model, test_experiences,
-             summary_writer, global_step, verbose=False):
+def write_summaries(session, run_inference, model, test_experiences,
+                    summary_writer, global_step):
 
   state_batch, targets, actions = get_batches(test_experiences, run_inference)
   state_batch_p, targets_p, actions_p = model.placeholders
@@ -151,6 +150,9 @@ def evaluate(run_inference, get_q_values, session, model, test_experiences,
       actions_p: actions,
   })
   summary_writer.add_summary(summary_str, global_step)
+
+
+def evaluate(get_q_values, verbose=False):
 
   greedy_strategy = make_greedy_strategy(get_q_values)
 
