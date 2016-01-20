@@ -10,7 +10,8 @@ NUM_TILES = 16
 NUM_ACTIONS = 4
 
 WEIGHT_INIT_SCALE = 0.01
-LEARNING_RATE = 0.0001
+INIT_LEARNING_RATE = 0.001
+LR_DECAY_PER_100K = 0.5
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -30,7 +31,7 @@ class FeedModel(object):
                                           [30, 20, 20])
     self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
-    self.train_op, self.global_step = build_train_op(self.loss, LEARNING_RATE)
+    self.train_op, self.global_step = build_train_op(self.loss)
 
     self.init = tf.initialize_all_variables()
     self.summary_op = tf.merge_all_summaries()
@@ -109,18 +110,22 @@ def build_loss(q_values, targets, actions):
   return tf.reduce_sum(tf.pow(relevant_q_values - targets, 2)) / 2
 
 
-def build_train_op(loss, learning_rate):
+def build_train_op(loss):
   """Sets up the training Ops.
 
   Args:
     loss: Loss tensor, from loss().
-    learning_rate: The learning rate to use for gradient descent.
 
   Returns:
     train_op, global_step: The Op for training & global step Tensor.
   """
   tf.scalar_summary("Loss", loss)
-  optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+
   global_step = tf.Variable(0, name='global_step', trainable=False)
+  learning_rate = tf.train.exponential_decay(
+      INIT_LEARNING_RATE, global_step, 100000, LR_DECAY_PER_100K)
+  tf.scalar_summary("Learning Rate", learning_rate)
+
+  optimizer = tf.train.GradientDescentOptimizer(learning_rate)
   train_op = optimizer.minimize(loss, global_step=global_step)
   return train_op, global_step
