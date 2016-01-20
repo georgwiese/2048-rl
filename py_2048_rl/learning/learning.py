@@ -74,17 +74,17 @@ def run_training():
   with tf.Graph().as_default():
     model = FeedModel()
     saver = tf.train.Saver()
-    sess = tf.Session()
+    session = tf.Session()
     summary_writer = tf.train.SummaryWriter(TRAIN_DIR,
-                                            graph_def=sess.graph_def,
+                                            graph_def=session.graph_def,
                                             flush_secs=10)
 
-    sess.run(model.init)
+    session.run(model.init)
 
     def run_inference(state_batch):
       """Run inference on a given state_batch. Returns a q value batch."""
-      return sess.run(model.q_values,
-                      feed_dict={model.state_batch_placeholder: state_batch})
+      return session.run(model.q_values,
+                         feed_dict={model.state_batch_placeholder: state_batch})
 
     def get_q_values(state):
       """Run inference an a single (4, 4) state matrix."""
@@ -113,7 +113,7 @@ def run_training():
         state_batch, targets, actions = get_batches(batch_experiences,
                                                     run_inference)
 
-        [loss_value, _] = sess.run(
+        [loss_value, _] = session.run(
             [model.loss, model.train_op],
             feed_dict={
                 model.state_batch_placeholder: state_batch,
@@ -131,8 +131,8 @@ def run_training():
               np.average(targets)))
 
         if global_step % 1000 == 0 and global_step != 0:
-          saver.save(sess, TRAIN_DIR + "/checkpoint", global_step=global_step)
-          write_summaries(sess, run_inference, model, test_experiences,
+          saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
+          write_summaries(session, run_inference, model, test_experiences,
                           summary_writer, global_step)
           print('Average Score: %f' % evaluate(get_q_values, verbose=True))
 
