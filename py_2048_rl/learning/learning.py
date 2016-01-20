@@ -106,36 +106,34 @@ def run_training():
 
     test_experiences = collect_experience(100, play.random_strategy)
 
-    global_step = 0
     for state_batch, targets, actions in get_batches(
         get_q_values, run_inference):
 
-      session.run(model.train_op, feed_dict={
-          model.state_batch_placeholder: state_batch,
-          model.targets_placeholder: targets,
-          model.actions_placeholder: actions,})
+      global_step, _ = session.run([model.global_step, model.train_op],
+          feed_dict={
+              model.state_batch_placeholder: state_batch,
+              model.targets_placeholder: targets,
+              model.actions_placeholder: actions,})
 
       if global_step % 1000 == 0 and global_step != 0:
         saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
         write_summaries(session, run_inference, model, test_experiences,
-                        summary_writer, global_step)
+                        summary_writer)
         print('Average Score: %f' % evaluate(get_q_values))
-
-      global_step += 1
 
 
 def write_summaries(session, run_inference, model, test_experiences,
-                    summary_writer, global_step):
+                    summary_writer):
   """Writes summaries by running the model on test_experiences."""
 
   state_batch, targets, actions = experiences_to_batches(
       test_experiences, run_inference)
   state_batch_p, targets_p, actions_p = model.placeholders
-  summary_str = session.run(model.summary_op, feed_dict={
-      state_batch_p: state_batch,
-      targets_p: targets,
-      actions_p: actions,
-  })
+  summary_str, global_step = session.run([model.summary_op, model.global_step],
+      feed_dict={
+          state_batch_p: state_batch,
+          targets_p: targets,
+          actions_p: actions,})
   summary_writer.add_summary(summary_str, global_step)
 
 

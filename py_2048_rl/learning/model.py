@@ -30,7 +30,7 @@ class FeedModel(object):
                                           [30, 20, 20])
     self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
-    self.train_op = build_train_op(self.loss, LEARNING_RATE)
+    self.train_op, self.global_step = build_train_op(self.loss, LEARNING_RATE)
 
     self.init = tf.initialize_all_variables()
     self.summary_op = tf.merge_all_summaries()
@@ -117,10 +117,10 @@ def build_train_op(loss, learning_rate):
     learning_rate: The learning rate to use for gradient descent.
 
   Returns:
-    train_op: The Op for training.
+    train_op, global_step: The Op for training & global step Tensor.
   """
   tf.scalar_summary("Loss", loss)
   optimizer = tf.train.GradientDescentOptimizer(learning_rate)
   global_step = tf.Variable(0, name='global_step', trainable=False)
   train_op = optimizer.minimize(loss, global_step=global_step)
-  return train_op
+  return train_op, global_step
