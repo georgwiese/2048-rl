@@ -19,6 +19,8 @@ EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
+MIN_EPSILON = 0.1
+
 TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
 
 def collect_experience(num_games, strategy):
@@ -35,7 +37,7 @@ def get_batches(get_q_values, run_inference):
   """Yields training batches from 100 epsilon-greedy games, in random order."""
 
   for i in itertools.count():
-    epsilon = max(0, 1.0 - i / 1000.0)
+    epsilon = max(MIN_EPSILON, 1.0 - i / 1000.0)
     print("Collecting experience, epsilon: %f" % epsilon)
     print("Games: %d" % ((i + 1) * 100))
 
@@ -115,7 +117,7 @@ def run_training():
               model.targets_placeholder: targets,
               model.actions_placeholder: actions,})
 
-      if global_step % 1000 == 0 and global_step != 0:
+      if global_step % 10000 == 0 and global_step != 0:
         saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
         write_summaries(session, run_inference, model, test_experiences,
                         summary_writer)

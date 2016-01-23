@@ -10,8 +10,8 @@ NUM_TILES = 16
 NUM_ACTIONS = 4
 
 WEIGHT_INIT_SCALE = 0.01
-INIT_LEARNING_RATE = 0.001
-LR_DECAY_PER_100K = 0.5
+INIT_LEARNING_RATE = 0.0005
+LR_DECAY_PER_100K = 0.9
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -38,6 +38,8 @@ class FeedModel(object):
                       tf.reduce_mean(self.targets_placeholder))
     tf.scalar_summary("Learning Rate", self.learning_rate)
     tf.scalar_summary("Loss", self.loss)
+    tf.histogram_summary("States", self.state_batch_placeholder)
+    tf.histogram_summary("Targets", self.targets_placeholder)
 
     self.init = tf.initialize_all_variables()
     self.summary_op = tf.merge_all_summaries()
@@ -122,7 +124,7 @@ def build_train_op(loss):
   """Sets up the training Ops.
 
   Args:
-    loss: Loss tensor, from loss().
+    loss: Loss tensor, from build_loss().
 
   Returns:
     train_op, global_step, learning_rate.
@@ -131,6 +133,6 @@ def build_train_op(loss):
   learning_rate = tf.train.exponential_decay(
       INIT_LEARNING_RATE, global_step, 100000, LR_DECAY_PER_100K)
 
-  optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+  optimizer = tf.train.AdamOptimizer(learning_rate)
   train_op = optimizer.minimize(loss, global_step=global_step)
   return train_op, global_step, learning_rate
