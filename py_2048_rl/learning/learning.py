@@ -19,6 +19,8 @@ EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
+GAMMA = 0.9
+
 GAMES_PER_SHUFFLE = 10
 DECREASE_EPSILON_GAMES = 1000000.0
 MIN_EPSILON = 0.1
@@ -42,9 +44,9 @@ def get_batches(get_q_values, run_inference):
   for i in itertools.count():
     epsilon = max(MIN_EPSILON,
                   1.0 - i / DECREASE_EPSILON_GAMES * GAMES_PER_SHUFFLE)
-    if i % 100 == 0:
+    if (i * GAMES_PER_SHUFFLE) % 1000 == 0:
       print("Collecting experience, epsilon: %f" % epsilon)
-      print("Games: %d" % ((i + 1) * GAMES_PER_SHUFFLE))
+      print("Games generated: %d" % (i * GAMES_PER_SHUFFLE))
 
     strategy = play.make_epsilon_greedy_strategy(get_q_values, epsilon)
     experiences = collect_experience(GAMES_PER_SHUFFLE, strategy)
@@ -81,7 +83,7 @@ def experiences_to_batches(experiences, run_inference):
   predictions = run_inference(next_state_batch)
   max_qs = predictions.max(axis=1)
   max_qs[game_over_batch] = 0
-  targets += max_qs
+  targets += GAMMA * max_qs
 
   return state_batch, targets, actions
 
@@ -111,6 +113,8 @@ def make_get_q_values(session, model):
 
 def run_training():
   """Run training"""
+
+  print("Train dir: ", TRAIN_DIR)
 
   with tf.Graph().as_default():
     model = FeedModel()
