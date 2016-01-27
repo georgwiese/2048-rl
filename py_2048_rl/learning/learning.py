@@ -19,8 +19,10 @@ EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
+DECREASE_EPSILON_GAMES = 1000000.0
 MIN_EPSILON = 0.1
 
+RESUME = False
 TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
 
 def collect_experience(num_games, strategy):
@@ -37,7 +39,7 @@ def get_batches(get_q_values, run_inference):
   """Yields training batches from 100 epsilon-greedy games, in random order."""
 
   for i in itertools.count():
-    epsilon = max(MIN_EPSILON, 1.0 - i / 1000.0)
+    epsilon = max(MIN_EPSILON, 1.0 - i / DECREASE_EPSILON_GAMES * 100)
     print("Collecting experience, epsilon: %f" % epsilon)
     print("Games: %d" % ((i + 1) * 100))
 
@@ -81,6 +83,27 @@ def experiences_to_batches(experiences, run_inference):
   return state_batch, targets, actions
 
 
+def make_run_inference(session, model):
+
+  def run_inference(state_batch):
+    """Run inference on a given state_batch. Returns a q value batch."""
+    return session.run(model.q_values,
+                       feed_dict={model.state_batch_placeholder: state_batch})
+  return run_inference
+
+
+def make_get_q_values(session, model):
+
+  run_inference = make_run_inference(session, model)
+  def get_q_values(state):
+    """Run inference on a single (4, 4) state matrix."""
+    state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
+    state_batch = np.array([state_vector])
+    q_values_batch = run_inference(state_batch)
+    return q_values_batch[0]
+  return get_q_values
+
+
 def run_training():
   """Run training"""
 
@@ -92,19 +115,13 @@ def run_training():
                                             graph_def=session.graph_def,
                                             flush_secs=10)
 
-    session.run(model.init)
+    if RESUME:
+      saver.restore(session, tf.train.latest_checkpoint(TRAIN_DIR))
+    else:
+      session.run(model.init)
 
-    def run_inference(state_batch):
-      """Run inference on a given state_batch. Returns a q value batch."""
-      return session.run(model.q_values,
-                         feed_dict={model.state_batch_placeholder: state_batch})
-
-    def get_q_values(state):
-      """Run inference an a single (4, 4) state matrix."""
-      state_vector = state.flatten() * STATE_NORMALIZE_FACTOR
-      state_batch = np.array([state_vector])
-      q_values_batch = run_inference(state_batch)
-      return q_values_batch[0]
+    run_inference = make_run_inference(session, model)
+    get_q_values = make_get_q_values(session, model)
 
     test_experiences = collect_experience(100, play.random_strategy)
 
