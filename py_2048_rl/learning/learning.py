@@ -19,6 +19,7 @@ EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
 
+GAMES_PER_SHUFFLE = 10
 DECREASE_EPSILON_GAMES = 1000000.0
 MIN_EPSILON = 0.1
 
@@ -36,15 +37,17 @@ def collect_experience(num_games, strategy):
 
 
 def get_batches(get_q_values, run_inference):
-  """Yields training batches from 100 epsilon-greedy games, in random order."""
+  """Yields randomized batches from GAMES_PER_SHUFFLE epsilon-greedy games."""
 
   for i in itertools.count():
-    epsilon = max(MIN_EPSILON, 1.0 - i / DECREASE_EPSILON_GAMES * 100)
-    print("Collecting experience, epsilon: %f" % epsilon)
-    print("Games: %d" % ((i + 1) * 100))
+    epsilon = max(MIN_EPSILON,
+                  1.0 - i / DECREASE_EPSILON_GAMES * GAMES_PER_SHUFFLE)
+    if i % 100 == 0:
+      print("Collecting experience, epsilon: %f" % epsilon)
+      print("Games: %d" % ((i + 1) * GAMES_PER_SHUFFLE))
 
     strategy = play.make_epsilon_greedy_strategy(get_q_values, epsilon)
-    experiences = collect_experience(100, strategy)
+    experiences = collect_experience(GAMES_PER_SHUFFLE, strategy)
 
     steps = len(experiences) // BATCH_SIZE
     experience_indices = np.random.permutation(len(experiences))
