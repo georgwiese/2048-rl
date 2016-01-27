@@ -84,6 +84,7 @@ def experiences_to_batches(experiences, run_inference):
 
 
 def make_run_inference(session, model):
+  """Make run_inference() function for given session and model."""
 
   def run_inference(state_batch):
     """Run inference on a given state_batch. Returns a q value batch."""
@@ -93,6 +94,7 @@ def make_run_inference(session, model):
 
 
 def make_get_q_values(session, model):
+  """Make get_q_values() function for given session and model."""
 
   run_inference = make_run_inference(session, model)
   def get_q_values(state):

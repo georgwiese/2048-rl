@@ -9,11 +9,11 @@ from py_2048_rl.learning import learning
 from py_2048_rl.learning.model import FeedModel
 
 import tensorflow as tf
-import numpy as np
 
 TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
 
 def play_game():
+  """Play a single game using the latest model snapshot in TRAIN_DIR."""
 
   with tf.Session() as session:
     model = FeedModel()
