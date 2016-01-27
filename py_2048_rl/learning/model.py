@@ -11,7 +11,7 @@ NUM_ACTIONS = 4
 
 WEIGHT_INIT_SCALE = 0.01
 INIT_LEARNING_RATE = 0.0005
-LR_DECAY_PER_100K = 0.9
+LR_DECAY_PER_100K = 0.98
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -27,8 +27,9 @@ class FeedModel(object):
                          self.targets_placeholder,
                          self.actions_placeholder)
 
-    self.q_values = build_inference_graph(self.state_batch_placeholder,
-                                          [30, 20, 20])
+    self.weights, self.biases, self.activations = build_inference_graph(
+        self.state_batch_placeholder, [30, 20, 20])
+    self.q_values = self.activations[-1]
     self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
     self.train_op, self.global_step, self.learning_rate = (
@@ -60,15 +61,29 @@ def build_inference_graph(state_batch, hidden_sizes):
   input_batch = state_batch
   input_size = NUM_TILES
 
+  weights = []
+  biases = []
+  activations = []
+
   for i, hidden_size in enumerate(hidden_sizes):
-    hidden_output_i = build_fully_connected_layer(
+    weights_i, biases_i, hidden_output_i = build_fully_connected_layer(
         'hidden' + str(i), input_batch, input_size, hidden_size)
+
+    weights.append(weights_i)
+    biases.append(biases_i)
+    activations.append(hidden_output_i)
 
     input_batch = hidden_output_i
     input_size = hidden_size
 
-  return build_fully_connected_layer('q_values', input_batch, input_size,
-                                     NUM_ACTIONS)
+  weights_qvalues, biases_qvalues, output = build_fully_connected_layer(
+      'q_values', input_batch, input_size, NUM_ACTIONS)
+
+  weights.append(weights_qvalues)
+  biases.append(biases_qvalues)
+  activations.append(output)
+
+  return weights, biases, activations
 
 
 def build_fully_connected_layer(name, input_batch, input_size, layer_size):
@@ -95,7 +110,7 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size):
     tf.histogram_summary("Biases " + name, biases)
     tf.histogram_summary("Activations " + name, output_batch)
 
-    return output_batch
+    return weights, biases, output_batch
 
 
 def build_loss(q_values, targets, actions):
@@ -133,6 +148,6 @@ def build_train_op(loss):
   learning_rate = tf.train.exponential_decay(
       INIT_LEARNING_RATE, global_step, 100000, LR_DECAY_PER_100K)
 
-  optimizer = tf.train.AdamOptimizer(learning_rate)
+  optimizer = tf.train.AdagradOptimizer(learning_rate)
   train_op = optimizer.minimize(loss, global_step=global_step)
   return train_op, global_step, learning_rate
