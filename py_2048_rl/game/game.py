@@ -37,6 +37,11 @@ class Game(object):
     else:
       self._state = state
 
+  def copy(self):
+    """Return a copy of self."""
+
+    return Game(np.copy(self._state), self._score)
+
   def game_over(self):
     """Whether the game is over."""
     return len(self.available_actions()) == 0

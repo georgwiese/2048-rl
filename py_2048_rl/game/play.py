@@ -40,6 +40,10 @@ def play(strategy, verbose=False):
     strategy: A function that takes as argument a state and a list of available
         actions and returns an action from the list.
     verbose: If true, prints game states, actions and scores.
+
+  Returns:
+    score, experiences where score is the final score and experiences is the
+        list Experience instances that represent the collected experience.
   """
 
   game = Game()
@@ -76,6 +80,25 @@ def play(strategy, verbose=False):
 def random_strategy(_, actions):
   """Strategy that always chooses actions at random."""
   return np.random.choice(actions)
+
+
+def static_preference_strategy(_, actions):
+  """Always prefer left over up over right over top."""
+
+  return min(actions)
+
+
+def highest_reward_strategy(state, actions):
+  """Strategy that always chooses the action of highest immediate reward.
+
+  If there are any ties, the strategy prefers left over up over right over down.
+  """
+
+  sorted_actions = np.sort(actions)[::-1]
+  rewards = map(lambda action: Game(np.copy(state)).do_action(action),
+                sorted_actions)
+  action_index = np.argsort(rewards, kind="mergesort")[-1]
+  return sorted_actions[action_index]
 
 
 def make_greedy_strategy(get_q_values):

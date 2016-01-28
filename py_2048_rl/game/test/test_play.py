@@ -1,6 +1,7 @@
 """Tests for the play module."""
 
-from py_2048_rl.game.play import play
+from py_2048_rl.game import game
+from py_2048_rl.game.play import play, highest_reward_strategy
 from mock import Mock, patch, call
 
 import numpy as np
@@ -47,3 +48,27 @@ def test_play(game_class_mock):
   assert experiences[1].reward == 2
   assert (experiences[1].next_state == state3).all()
   assert experiences[1].game_over == True
+
+
+def test_highest_reward_strategy():
+  # Highest Reward is up / down (512), then left / right (16)
+  state = np.array([[1, 2, 3, 3],
+                    [4, 5, 6, 7],
+                    [8, 9, 1, 2],
+                    [8, 3, 4, 5]])
+
+  action = highest_reward_strategy(state, [game.ACTION_UP, game.ACTION_DOWN,
+                                           game.ACTION_RIGHT, game.ACTION_LEFT])
+  assert action == game.ACTION_UP
+
+  action = highest_reward_strategy(state, [game.ACTION_DOWN, game.ACTION_RIGHT,
+                                           game.ACTION_LEFT])
+  assert action == game.ACTION_DOWN
+
+  action = highest_reward_strategy(state, [game.ACTION_RIGHT, game.ACTION_LEFT])
+  assert action == game.ACTION_LEFT
+
+  action = highest_reward_strategy(state, [game.ACTION_RIGHT])
+  assert action == game.ACTION_RIGHT
+
+
