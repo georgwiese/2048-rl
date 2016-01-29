@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import itertools
+import math
 
 from py_2048_rl.game import play
 from py_2048_rl.learning.model import FeedModel
@@ -17,7 +18,7 @@ BATCH_SIZE = 20
 
 EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
-REWARD_NORMALIZE_FACTOR = 1.0 / 1000.0
+REWARD_NORMALIZE_FACTOR = 1.0 / 10.0
 
 GAMMA = 0.9
 
@@ -77,7 +78,8 @@ def experiences_to_batches(experiences, run_inference):
     next_state_batch[i, :] = (experience.next_state.flatten() *
                               STATE_NORMALIZE_FACTOR)
     actions[i] = experience.action
-    targets[i] = experience.reward * REWARD_NORMALIZE_FACTOR
+    targets[i] = (0 if experience.reward == 0
+                    else math.log(experience.reward) * REWARD_NORMALIZE_FACTOR)
     game_over_batch[i] = experience.game_over
 
   predictions = run_inference(next_state_batch)
