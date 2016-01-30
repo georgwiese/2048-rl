@@ -9,6 +9,8 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
+HIDDEN_SIZES = [30, 20, 20]
+
 WEIGHT_INIT_SCALE = 0.01
 INIT_LEARNING_RATE = 0.0005
 LR_DECAY_PER_100K = 0.98
@@ -28,7 +30,7 @@ class FeedModel(object):
                          self.actions_placeholder)
 
     self.weights, self.biases, self.activations = build_inference_graph(
-        self.state_batch_placeholder, [30, 20, 20])
+        self.state_batch_placeholder, HIDDEN_SIZES)
     self.q_values = self.activations[-1]
     self.loss = build_loss(self.q_values, self.targets_placeholder,
                      self.actions_placeholder)
