@@ -14,7 +14,7 @@ import tensorflow as tf
 
 import numpy as np
 
-BATCH_SIZE = 20
+BATCH_SIZE = 32
 
 EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
@@ -82,10 +82,11 @@ def experiences_to_batches(experiences, run_inference):
                     else math.log(experience.reward) * REWARD_NORMALIZE_FACTOR)
     game_over_batch[i] = experience.game_over
 
-  predictions = run_inference(next_state_batch)
-  max_qs = predictions.max(axis=1)
-  max_qs[game_over_batch] = 0
-  targets += GAMMA * max_qs
+  if GAMMA > 0:
+    predictions = run_inference(next_state_batch)
+    max_qs = predictions.max(axis=1)
+    max_qs[game_over_batch] = 0
+    targets += GAMMA * max_qs
 
   return state_batch, targets, actions
 
