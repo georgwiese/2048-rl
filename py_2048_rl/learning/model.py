@@ -134,7 +134,7 @@ def build_loss(q_values, targets, actions):
   relevant_q_values = tf.gather(tf.reshape(q_values, [-1]), q_value_indices)
 
   # Compute L2 loss (tf.nn.l2_loss() doesn't seem to be available on CPU)
-  return tf.reduce_mean(tf.pow(relevant_q_values - targets, 2)) / 2
+  return tf.reduce_mean(tf.pow(relevant_q_values - targets, 2))
 
 
 def build_train_op(loss):
