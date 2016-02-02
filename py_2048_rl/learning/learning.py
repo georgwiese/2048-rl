@@ -18,13 +18,14 @@ BATCH_SIZE = 32
 
 EXPERIENCE_SIZE = 100000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
-REWARD_NORMALIZE_FACTOR = 1.0 / 10.0
+REWARD_NORMALIZE_FACTOR = 1.0 / 50.0
 
-GAMMA = 0.0
+GAMMA = 0.98
 
 GAMES_PER_SHUFFLE = 10
+START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 1000000.0
-MIN_EPSILON = 1.0
+MIN_EPSILON = 0.1
 
 RESUME = False
 TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
@@ -43,8 +44,13 @@ def get_batches(get_q_values, run_inference):
   """Yields randomized batches from GAMES_PER_SHUFFLE epsilon-greedy games."""
 
   for i in itertools.count():
-    epsilon = max(MIN_EPSILON,
-                  1.0 - i / DECREASE_EPSILON_GAMES * GAMES_PER_SHUFFLE)
+    games = i * GAMES_PER_SHUFFLE
+    if games < START_DECREASE_EPSILON_GAMES:
+      epsilon = 1.0
+    else:
+      epsilon = max(MIN_EPSILON,
+                    1.0 - (games - START_DECREASE_EPSILON_GAMES) /
+                    DECREASE_EPSILON_GAMES)
     if (i * GAMES_PER_SHUFFLE) % 1000 == 0:
       print("Collecting experience, epsilon: %f" % epsilon)
       print("Games generated: %d" % (i * GAMES_PER_SHUFFLE))
@@ -78,8 +84,7 @@ def experiences_to_batches(experiences, run_inference):
     next_state_batch[i, :] = (experience.next_state.flatten() *
                               STATE_NORMALIZE_FACTOR)
     actions[i] = experience.action
-    targets[i] = (0 if experience.reward == 0
-                    else math.log(experience.reward) * REWARD_NORMALIZE_FACTOR)
+    targets[i] = 0 if experience.reward == 0 else REWARD_NORMALIZE_FACTOR
     game_over_batch[i] = experience.game_over
 
   if GAMMA > 0:
