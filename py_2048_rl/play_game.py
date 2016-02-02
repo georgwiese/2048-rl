@@ -24,7 +24,7 @@ def average_score(strategy):
   return np.mean(scores)
 
 
-def make_greedy_strategy(train_dir):
+def make_greedy_strategy(train_dir, verbose=False):
   """Load the latest checkpoint from train_dir, make a greedy strategy."""
 
   session = tf.Session()
@@ -33,7 +33,7 @@ def make_greedy_strategy(train_dir):
   saver.restore(session, tf.train.latest_checkpoint(train_dir))
 
   get_q_values = learning.make_get_q_values(session, model)
-  greedy_strategy = play.make_greedy_strategy(get_q_values)
+  greedy_strategy = play.make_greedy_strategy(get_q_values, verbose)
 
   return greedy_strategy
 
