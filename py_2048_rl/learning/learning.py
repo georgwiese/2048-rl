@@ -23,7 +23,7 @@ REWARD_NORMALIZE_FACTOR = 1.0 / 10.0
 
 GAMMA = 0.0
 
-MEMORY_CAPACITY = 1e4
+MEMORY_CAPACITY = 1e5
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
 
@@ -164,7 +164,7 @@ def run_training():
         saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
         loss = write_summaries(session, run_inference, model, test_experiences,
                                summary_writer)
-        print("Loss:", loss)
+        print("Step:", global_step, "Loss:", loss)
         # print('Average Score: %f' % evaluate(get_q_values))
 
 
