@@ -11,10 +11,11 @@ import numpy as np
 
 def test_experiences_to_batches():
   learning.BATCH_SIZE = 2
+  learning.GAMMA = 0.5
 
-  state1 = np.arange(16).reshape((4, 4))
-  state2 = np.arange(16).reshape((4, 4)) + 1
-  state3 = np.arange(16).reshape((4, 4)) + 2
+  state1 = np.arange(16).reshape((4, 4)) + 1
+  state2 = np.arange(16).reshape((4, 4)) + 2
+  state3 = np.arange(16).reshape((4, 4)) + 3
   experiences = [Experience(state1, 1, 2, state2, False),
                  Experience(state2, 3, 4, state3, True)]
 
@@ -30,8 +31,8 @@ def test_experiences_to_batches():
   expected_state_batch = np.array([state1.flatten(), state2.flatten()]) / 15.0
   assert (state_batch == expected_state_batch).all()
 
-  # Targets should be 3.002 (2 / 1000 reward + 3 max Q) and 0.004
-  # (4 / 1000 reward, final state).
-  assert (targets == np.array([3.002, 0.004])).all()
+  # Targets should be 2.5 (1 reward + 0.5 * 3 max Q) and 1
+  # (1 reward, final state).
+  assert (targets == np.array([2.5, 1])).all()
 
   assert (actions == np.array([1, 3])).all()

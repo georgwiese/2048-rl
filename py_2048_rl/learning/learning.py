@@ -6,26 +6,27 @@ from __future__ import print_function
 
 import itertools
 import math
+import random
+from collections import deque
 
 from py_2048_rl.game import play
 from py_2048_rl.learning.model import FeedModel
 
 import tensorflow as tf
-
 import numpy as np
 
 BATCH_SIZE = 32
 
-EXPERIENCE_SIZE = 100000
+EXPERIENCE_SIZE = 10000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 50.0
 
 GAMMA = 0.98
 
-GAMES_PER_SHUFFLE = 10
+MEMORY_CAPACITY = 1e5
 START_DECREASE_EPSILON_GAMES = 200000
-DECREASE_EPSILON_GAMES = 1000000.0
-MIN_EPSILON = 0.1
+DECREASE_EPSILON_GAMES = 100000.0
+MIN_EPSILON = 1.0
 
 RESUME = False
 TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
@@ -40,32 +41,44 @@ def collect_experience(num_games, strategy):
   return experiences
 
 
+def add_to_memory(memory, experience):
+  """Add a single experience to memory."""
+
+  memory.append(experience)
+  if len(memory) > MEMORY_CAPACITY:
+    memory.popleft()
+
+
 def get_batches(get_q_values, run_inference):
-  """Yields randomized batches from GAMES_PER_SHUFFLE epsilon-greedy games."""
+  """Yields randomized batches epsilon-greedy games.
+
+  Maintains a replay memory at full capacity.
+  """
+
+  print("Initializing memory...")
+  memory = deque()
+  while len(memory) < MEMORY_CAPACITY:
+    _, experiences = play.play(play.random_strategy)
+    for experience in experiences:
+      add_to_memory(memory, experience)
 
   for i in itertools.count():
-    games = i * GAMES_PER_SHUFFLE
-    if games < START_DECREASE_EPSILON_GAMES:
+    if i < START_DECREASE_EPSILON_GAMES:
       epsilon = 1.0
     else:
       epsilon = max(MIN_EPSILON,
-                    1.0 - (games - START_DECREASE_EPSILON_GAMES) /
+                    1.0 - (i - START_DECREASE_EPSILON_GAMES) /
                     DECREASE_EPSILON_GAMES)
-    if (i * GAMES_PER_SHUFFLE) % 1000 == 0:
+    if i % 1000 == 0:
       print("Collecting experience, epsilon: %f" % epsilon)
-      print("Games generated: %d" % (i * GAMES_PER_SHUFFLE))
+      print("New Games generated: %d" % i)
 
     strategy = play.make_epsilon_greedy_strategy(get_q_values, epsilon)
-    experiences = collect_experience(GAMES_PER_SHUFFLE, strategy)
+    _, experiences = play.play(strategy)
 
-    steps = len(experiences) // BATCH_SIZE
-    experience_indices = np.random.permutation(len(experiences))
-
-    for step in range(steps):
-      batch_indices = experience_indices[step * BATCH_SIZE :
-                                         (step + 1) * BATCH_SIZE]
-      batch_experiences = [experiences[i] for i in batch_indices]
-
+    for experience in experiences:
+      add_to_memory(memory, experience)
+      batch_experiences = random.sample(memory, BATCH_SIZE)
       yield experiences_to_batches(batch_experiences, run_inference)
 
 
@@ -153,24 +166,27 @@ def run_training():
 
       if global_step % 10000 == 0 and global_step != 0:
         saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
-        write_summaries(session, run_inference, model, test_experiences,
-                        summary_writer)
-        print('Average Score: %f' % evaluate(get_q_values))
+        loss = write_summaries(session, run_inference, model, test_experiences,
+                               summary_writer)
+        print("Step:", global_step, "Loss:", loss)
+        # print('Average Score: %f' % evaluate(get_q_values))
 
 
 def write_summaries(session, run_inference, model, test_experiences,
                     summary_writer):
-  """Writes summaries by running the model on test_experiences."""
+  """Writes summaries by running the model on test_experiences. Returns loss."""
 
   state_batch, targets, actions = experiences_to_batches(
       test_experiences, run_inference)
   state_batch_p, targets_p, actions_p = model.placeholders
-  summary_str, global_step = session.run([model.summary_op, model.global_step],
+  summary_str, global_step, loss = session.run(
+      [model.summary_op, model.global_step, model.loss],
       feed_dict={
           state_batch_p: state_batch,
           targets_p: targets,
           actions_p: actions,})
   summary_writer.add_summary(summary_str, global_step)
+  return loss
 
 
 def evaluate(get_q_values, verbose=False):
