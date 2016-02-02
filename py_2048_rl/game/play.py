@@ -1,5 +1,9 @@
 """Algorithms and strategies to play 2048 and collect experience."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from py_2048_rl.game.game import Game, ACTION_NAMES
 
 import numpy as np
@@ -53,26 +57,29 @@ def play(strategy, verbose=False):
   experiences = []
 
   while not game_over:
+    if verbose:
+      print("Score:", game.score())
+      game.print_state()
+
     old_state = state
     actions = game.available_actions()
     next_action = strategy(old_state, actions)
-
-    if verbose:
-      print "Score:", game.score()
-      game.print_state()
-      print "Action:", ACTION_NAMES[next_action]
 
     reward = game.do_action(next_action)
     state = game.state().copy()
     game_over = game.game_over()
 
+    if verbose:
+      print("Action:", ACTION_NAMES[next_action])
+      print("Reward:", reward)
+
     experiences.append(Experience(old_state, next_action, reward, state,
                                   game_over))
 
   if verbose:
-    print "Score:", game.score()
+    print("Score:", game.score())
     game.print_state()
-    print "Game over."
+    print("Game over.")
 
   return game.score(), experiences
 
@@ -100,13 +107,14 @@ def highest_reward_strategy(state, actions):
   action_index = np.argsort(rewards, kind="mergesort")[-1]
   return sorted_actions[action_index]
 
-
-def make_greedy_strategy(get_q_values):
+def make_greedy_strategy(get_q_values, verbose=False):
   """Makes greedy_strategy."""
 
   def greedy_strategy(state, actions):
     """Strategy that always picks the action of maximum Q(state, action)."""
     q_values = get_q_values(state)
+    if verbose:
+      print("Q-Values: ", q_values)
     sorted_actions = np.argsort(q_values)
     action = [a for a in sorted_actions if a in actions][-1]
     return action
