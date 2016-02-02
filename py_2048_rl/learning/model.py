@@ -9,10 +9,10 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
-HIDDEN_SIZES = [30, 20, 20]
+HIDDEN_SIZES = [16, 16]
 
 WEIGHT_INIT_SCALE = 0.01
-INIT_LEARNING_RATE = 0.0005
+INIT_LEARNING_RATE = 1e-4
 LR_DECAY_PER_100K = 0.98
 
 
@@ -150,6 +150,6 @@ def build_train_op(loss):
   learning_rate = tf.train.exponential_decay(
       INIT_LEARNING_RATE, global_step, 100000, LR_DECAY_PER_100K)
 
-  optimizer = tf.train.AdagradOptimizer(learning_rate)
+  optimizer = tf.train.AdamOptimizer(learning_rate)
   train_op = optimizer.minimize(loss, global_step=global_step)
   return train_op, global_step, learning_rate

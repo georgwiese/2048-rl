@@ -77,9 +77,10 @@ def experiences_to_batches(experiences, run_inference):
     state_batch[i, :] = experience.state.flatten() * STATE_NORMALIZE_FACTOR
     next_state_batch[i, :] = (experience.next_state.flatten() *
                               STATE_NORMALIZE_FACTOR)
+    reward = (np.count_nonzero(experience.state) -
+              np.count_nonzero(experience.next_state) + 1)
     actions[i] = experience.action
-    targets[i] = (0 if experience.reward == 0
-                    else math.log(experience.reward) * REWARD_NORMALIZE_FACTOR)
+    targets[i] = reward
     game_over_batch[i] = experience.game_over
 
   if GAMMA > 0:
@@ -150,7 +151,7 @@ def run_training():
         saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
         write_summaries(session, run_inference, model, test_experiences,
                         summary_writer)
-        print('Average Score: %f' % evaluate(get_q_values))
+        # print('Average Score: %f' % evaluate(get_q_values))
 
 
 def write_summaries(session, run_inference, model, test_experiences,
