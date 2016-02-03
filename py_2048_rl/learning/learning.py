@@ -91,7 +91,7 @@ def experiences_to_batches(experiences, run_inference):
     next_state_batch[i, :] = (experience.next_state.flatten() *
                               STATE_NORMALIZE_FACTOR)
     reward = (np.count_nonzero(experience.state) -
-              np.count_nonzero(experience.next_state) + 1)
+              np.count_nonzero(experience.next_state))
     actions[i] = experience.action
     targets[i] = reward
     game_over_batch[i] = experience.game_over
