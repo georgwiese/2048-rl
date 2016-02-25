@@ -114,6 +114,8 @@ def make_greedy_strategy(get_q_values, verbose=False):
     """Strategy that always picks the action of maximum Q(state, action)."""
     q_values = get_q_values(state)
     if verbose:
+      print("State:")
+      print(state)
       print("Q-Values: ", q_values)
     sorted_actions = np.argsort(q_values)
     action = [a for a in sorted_actions if a in actions][-1]
