@@ -12,7 +12,7 @@ NUM_ACTIONS = 4
 HIDDEN_SIZES = [16, 16]
 
 WEIGHT_INIT_SCALE = 0.01
-INIT_LEARNING_RATE = 1e-4
+INIT_LEARNING_RATE = 1e-5
 LR_DECAY_PER_100K = 0.98
 
 
@@ -69,7 +69,7 @@ def build_inference_graph(state_batch, hidden_sizes):
 
   for i, hidden_size in enumerate(hidden_sizes):
     weights_i, biases_i, hidden_output_i = build_fully_connected_layer(
-        'hidden' + str(i), input_batch, input_size, hidden_size)
+        'hidden' + str(i), input_batch, input_size, hidden_size, tf.nn.relu)
 
     weights.append(weights_i)
     biases.append(biases_i)
@@ -88,8 +88,9 @@ def build_inference_graph(state_batch, hidden_sizes):
   return weights, biases, activations
 
 
-def build_fully_connected_layer(name, input_batch, input_size, layer_size):
-  """Builds a fully connected ReLU layer.
+def build_fully_connected_layer(name, input_batch, input_size, layer_size,
+                                activation_function=lambda x: x):
+  """Builds a fully connected layer.
 
   Args:
     name: Name of the layer (-> Variable scope).
@@ -97,6 +98,7 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size):
         connected to.
     input_size: Number of input units.
     layer_size: Number of units in this layer.
+    activation_function: Activation Function to use. Defaults to none.
 
   Returns:
     The [batch_size, layer_size] output_batch Tensor.
@@ -106,7 +108,7 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size):
                                               stddev=WEIGHT_INIT_SCALE),
                           name='weights')
     biases = tf.Variable(tf.zeros([layer_size]), name='biases')
-    output_batch = tf.nn.relu(tf.matmul(input_batch, weights) + biases)
+    output_batch = activation_function(tf.matmul(input_batch, weights) + biases)
 
     tf.histogram_summary("Weights " + name, weights)
     tf.histogram_summary("Biases " + name, biases)

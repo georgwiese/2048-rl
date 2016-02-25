@@ -19,7 +19,7 @@ BATCH_SIZE = 32
 
 EXPERIENCE_SIZE = 10000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
-REWARD_NORMALIZE_FACTOR = 1.0 / 50.0
+REWARD_NORMALIZE_FACTOR = 1.0 / 25.0
 
 GAMMA = 0.98
 
@@ -97,14 +97,16 @@ def experiences_to_batches(experiences, run_inference):
     next_state_batch[i, :] = (experience.next_state.flatten() *
                               STATE_NORMALIZE_FACTOR)
     actions[i] = experience.action
-    targets[i] = 0 if experience.reward == 0 else REWARD_NORMALIZE_FACTOR
     game_over_batch[i] = experience.game_over
+
+  targets[game_over_batch] = -1
+  targets[np.logical_not(game_over_batch)] = REWARD_NORMALIZE_FACTOR - 1
 
   if GAMMA > 0:
     predictions = run_inference(next_state_batch)
     max_qs = predictions.max(axis=1)
-    max_qs[game_over_batch] = 0
-    targets += GAMMA * max_qs
+    max_qs[game_over_batch] = -1
+    targets += GAMMA * max_qs + GAMMA
 
   return state_batch, targets, actions
 
