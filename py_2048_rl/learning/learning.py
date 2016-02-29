@@ -28,7 +28,7 @@ DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
 
 RESUME = False
-TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
+TRAIN_DIR = "./train"
 
 def collect_experience(num_games, strategy):
   """Plays num_games random games, returns all collected experiences."""
