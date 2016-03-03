@@ -9,11 +9,13 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
-HIDDEN_SIZES = [16, 16]
+HIDDEN_SIZES = [256, 256]
 
 WEIGHT_INIT_SCALE = 0.01
-INIT_LEARNING_RATE = 1e-5
+INIT_LEARNING_RATE = 1e-3
 LR_DECAY_PER_100K = 0.98
+OPTIMIZER_CLASS = tf.train.AdamOptimizer
+ACTIVATION_FUNCTION = tf.nn.relu
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -69,7 +71,8 @@ def build_inference_graph(state_batch, hidden_sizes):
 
   for i, hidden_size in enumerate(hidden_sizes):
     weights_i, biases_i, hidden_output_i = build_fully_connected_layer(
-        'hidden' + str(i), input_batch, input_size, hidden_size, tf.nn.relu)
+        'hidden' + str(i), input_batch, input_size, hidden_size,
+        ACTIVATION_FUNCTION)
 
     weights.append(weights_i)
     biases.append(biases_i)
@@ -152,6 +155,6 @@ def build_train_op(loss):
   learning_rate = tf.train.exponential_decay(
       INIT_LEARNING_RATE, global_step, 100000, LR_DECAY_PER_100K)
 
-  optimizer = tf.train.AdamOptimizer(learning_rate)
+  optimizer = OPTIMIZER_CLASS(learning_rate)
   train_op = optimizer.minimize(loss, global_step=global_step)
   return train_op, global_step, learning_rate

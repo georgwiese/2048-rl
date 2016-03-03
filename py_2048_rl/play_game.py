@@ -11,7 +11,7 @@ from py_2048_rl.learning.model import FeedModel
 import tensorflow as tf
 import numpy as np
 
-TRAIN_DIR = "/Users/georg/coding/2048-rl/train"
+TRAIN_DIR = "./train"
 
 
 def average_score(strategy):
