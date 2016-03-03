@@ -116,16 +116,15 @@ def experiences_to_batches(experiences, run_inference):
     actions[i] = experience.action
     game_over_batch[i] = experience.game_over
 
+  not_game_over_batch = np.logical_not(game_over_batch)
+
   targets[game_over_batch] = -1
-  targets[np.logical_not(game_over_batch)] = REWARD_NORMALIZE_FACTOR - 1
+  targets[not_game_over_batch] = 0
 
   if GAMMA > 0:
     predictions = run_inference(next_state_batch)
     max_qs = predictions.max(axis=1)
-    max_qs[game_over_batch] = -1
-    targets += GAMMA * max_qs + GAMMA
-
-  # targets = np.minimum(targets, 1.0)
+    targets[not_game_over_batch] += GAMMA * max_qs[not_game_over_batch]
 
   return state_batch, targets, actions
 
