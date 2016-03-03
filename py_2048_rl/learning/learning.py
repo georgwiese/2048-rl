@@ -27,6 +27,7 @@ MEMORY_CAPACITY = 1e5
 START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
+BATCHES_KEEP_CONSTANT = 1e3
 
 RESUME = False
 TRAIN_DIR = "./train"
@@ -47,6 +48,22 @@ def add_to_memory(memory, experience):
   memory.append(experience)
   if len(memory) > MEMORY_CAPACITY:
     memory.popleft()
+
+
+def get_batches_stepwise(get_q_values, run_inference):
+  """Wraps get_batches(), keeping the current predictions constant for
+  BATCHES_KEEP_CONSTANT steps.
+  """
+
+  cache = []
+
+  for batches in get_batches(get_q_values, run_inference):
+    cache.append(batches)
+
+    if len(cache) >= BATCHES_KEEP_CONSTANT:
+      for cached_batches in cache:
+        yield cached_batches
+      cache = []
 
 
 def get_batches(get_q_values, run_inference):
@@ -108,6 +125,8 @@ def experiences_to_batches(experiences, run_inference):
     max_qs[game_over_batch] = -1
     targets += GAMMA * max_qs + GAMMA
 
+  # targets = np.minimum(targets, 1.0)
+
   return state_batch, targets, actions
 
 
@@ -157,7 +176,7 @@ def run_training():
 
     test_experiences = collect_experience(100, play.random_strategy)
 
-    for state_batch, targets, actions in get_batches(
+    for state_batch, targets, actions in get_batches_stepwise(
         get_q_values, run_inference):
 
       global_step, _ = session.run([model.global_step, model.train_op],
