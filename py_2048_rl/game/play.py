@@ -12,7 +12,8 @@ import numpy as np
 class Experience(object):
   """Struct to encapsulate the experience of a single turn."""
 
-  def __init__(self, state, action, reward, next_state, game_over):
+  def __init__(self, state, action, reward, next_state, game_over,
+               not_available):
     """Initialize Experience
 
     Args:
@@ -22,12 +23,14 @@ class Experience(object):
       next_state: Shape (4, 4) numpy array, the state after the action was
           executed
       game_over: boolean, whether next_state is a terminal state
+      not_available: boolean, whether action was not available from state
     """
     self.state = state
     self.action = action
     self.reward = reward
     self.next_state = next_state
     self.game_over = game_over
+    self.not_available = not_available
 
   def __str__(self):
     return str((self.state, self.action, self.reward, self.next_state,
@@ -62,19 +65,24 @@ def play(strategy, verbose=False):
       game.print_state()
 
     old_state = state
-    actions = game.available_actions()
-    next_action = strategy(old_state, actions)
+    available_actions = game.available_actions()
+    next_action = strategy(old_state, range(4))
 
-    reward = game.do_action(next_action)
-    state = game.state().copy()
-    game_over = game.game_over()
+    if next_action in available_actions:
 
-    if verbose:
-      print("Action:", ACTION_NAMES[next_action])
-      print("Reward:", reward)
+      reward = game.do_action(next_action)
+      state = game.state().copy()
+      game_over = game.game_over()
 
-    experiences.append(Experience(old_state, next_action, reward, state,
-                                  game_over))
+      if verbose:
+        print("Action:", ACTION_NAMES[next_action])
+        print("Reward:", reward)
+
+      experiences.append(Experience(old_state, next_action, reward, state,
+                                    game_over, False))
+
+    else:
+      experiences.append(Experience(state, next_action, 0, state, False, True))
 
   if verbose:
     print("Score:", game.score())
