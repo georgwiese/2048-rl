@@ -21,24 +21,26 @@ EXPERIENCE_SIZE = 10000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 25.0
 
-GAMMA = 0.98
+GAMMA = 0.0
 
-MEMORY_CAPACITY = 1e5
+MEMORY_CAPACITY = 1e4
 START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
 BATCHES_KEEP_CONSTANT = 1e3
+NOT_LOST_KEEP_PROB = 0.05
 
 RESUME = False
 TRAIN_DIR = "./train"
 
-def collect_experience(num_games, strategy):
+def collect_experience(strategy, num_games=1):
   """Plays num_games random games, returns all collected experiences."""
 
   experiences = []
   for _ in range(num_games):
     _, new_experiences = play.play(strategy)
-    experiences += new_experiences
+    experiences += [e for e in new_experiences
+                    if e.game_over or np.random.rand() < NOT_LOST_KEEP_PROB]
   return experiences
 
 
@@ -75,8 +77,7 @@ def get_batches(get_q_values, run_inference):
   print("Initializing memory...")
   memory = deque()
   while len(memory) < MEMORY_CAPACITY:
-    _, experiences = play.play(play.random_strategy)
-    for experience in experiences:
+    for experience in collect_experience(play.random_strategy):
       add_to_memory(memory, experience)
 
   for i in itertools.count():
@@ -86,14 +87,10 @@ def get_batches(get_q_values, run_inference):
       epsilon = max(MIN_EPSILON,
                     1.0 - (i - START_DECREASE_EPSILON_GAMES) /
                     DECREASE_EPSILON_GAMES)
-    if i % 1000 == 0:
-      print("Collecting experience, epsilon: %f" % epsilon)
-      print("New Games generated: %d" % i)
 
     strategy = play.make_epsilon_greedy_strategy(get_q_values, epsilon)
-    _, experiences = play.play(strategy)
 
-    for experience in experiences:
+    for experience in collect_experience(strategy):
       add_to_memory(memory, experience)
       batch_experiences = random.sample(memory, BATCH_SIZE)
       yield experiences_to_batches(batch_experiences, run_inference)
@@ -173,7 +170,7 @@ def run_training():
     run_inference = make_run_inference(session, model)
     get_q_values = make_get_q_values(session, model)
 
-    test_experiences = collect_experience(100, play.random_strategy)
+    test_experiences = collect_experience(play.random_strategy, 100)
 
     for state_batch, targets, actions in get_batches_stepwise(
         get_q_values, run_inference):
