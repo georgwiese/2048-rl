@@ -19,7 +19,7 @@ def average_score(strategy):
 
   scores = []
   for _ in range(100):
-    score, _ = play.play(strategy)
+    score, _ = play.play(strategy, allow_unavailable_action=False)
     scores.append(score)
   return np.mean(scores)
 

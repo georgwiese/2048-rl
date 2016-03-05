@@ -189,7 +189,6 @@ def run_training():
         loss = write_summaries(session, run_inference, model, test_experiences,
                                summary_writer)
         print("Step:", global_step, "Loss:", loss)
-        # print('Average Score: %f' % evaluate(get_q_values))
 
 
 def write_summaries(session, run_inference, model, test_experiences,
@@ -207,21 +206,6 @@ def write_summaries(session, run_inference, model, test_experiences,
           actions_p: actions,})
   summary_writer.add_summary(summary_str, global_step)
   return loss
-
-
-def evaluate(get_q_values, verbose=False):
-  """Plays 100 games with greedy_strategy, returns average score."""
-
-  greedy_strategy = play.make_greedy_strategy(get_q_values)
-
-  if verbose:
-    play.play(greedy_strategy, True)
-
-  scores = []
-  for _ in range(100):
-    score, _ = play.play(greedy_strategy)
-    scores.append(score)
-  return np.average(scores)
 
 
 def main(_):

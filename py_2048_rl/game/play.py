@@ -40,12 +40,14 @@ class Experience(object):
     return self.__str__()
 
 
-def play(strategy, verbose=False):
+def play(strategy, verbose=False, allow_unavailable_action=True):
   """Plays a single game, using a provided strategy.
 
   Args:
     strategy: A function that takes as argument a state and a list of available
         actions and returns an action from the list.
+    allow_unavailable_action: Boolean, whether strategy is passed all actions
+        or just the available ones.
     verbose: If true, prints game states, actions and scores.
 
   Returns:
@@ -66,7 +68,8 @@ def play(strategy, verbose=False):
 
     old_state = state
     available_actions = game.available_actions()
-    next_action = strategy(old_state, range(4))
+    next_action = strategy(
+        old_state, range(4) if allow_unavailable_action else available_actions)
 
     if next_action in available_actions:
 
