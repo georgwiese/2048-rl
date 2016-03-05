@@ -127,9 +127,14 @@ def make_greedy_strategy(get_q_values, verbose=False):
     if verbose:
       print("State:")
       print(state)
-      print("Q-Values: ", q_values)
+      print("Q-Values:")
+      for action, q_value, action_name in zip(range(4), q_values, ACTION_NAMES):
+        not_available_string = "" if action in actions else "(not available)"
+        print("%s:\t%.2f %s" % (action_name, q_value, not_available_string))
     sorted_actions = np.argsort(q_values)
     action = [a for a in sorted_actions if a in actions][-1]
+    if verbose:
+      print("-->", ACTION_NAMES[action])
     return action
 
   return greedy_strategy

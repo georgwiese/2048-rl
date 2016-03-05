@@ -41,6 +41,9 @@ def make_greedy_strategy(train_dir, verbose=False):
 def play_game():
   """Play a single game using the latest model snapshot in TRAIN_DIR."""
 
+  # s, _ = play.play(make_greedy_strategy(TRAIN_DIR, True),
+  #                  allow_unavailable_action=False)
+  # print(s)
   print("Average Score: ", average_score(make_greedy_strategy(TRAIN_DIR)))
 
 
