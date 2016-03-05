@@ -107,25 +107,24 @@ def experiences_to_batches(experiences, run_inference):
   next_state_batch = np.zeros((batch_size, 16))
   targets = np.zeros((batch_size,), dtype=np.float)
   actions = np.zeros((batch_size,), dtype=np.int)
-  game_over_batch = np.zeros((batch_size,), dtype=np.bool)
+  bad_action_batch = np.zeros((batch_size,), dtype=np.bool)
 
   for i, experience in enumerate(experiences):
     state_batch[i, :] = experience.state.flatten() * STATE_NORMALIZE_FACTOR
     next_state_batch[i, :] = (experience.next_state.flatten() *
                               STATE_NORMALIZE_FACTOR)
     actions[i] = experience.action
-    game_over_batch[i] = experience.game_over
+    bad_action_batch[i] = experience.game_over or experience.not_available
 
-  targets[game_over_batch] = -1
-  targets[np.logical_not(game_over_batch)] = REWARD_NORMALIZE_FACTOR - 1
+  good_action_batch = np.logical_not(bad_action_batch)
+
+  targets[bad_action_batch] = -1
+  targets[good_action_batch] = 0
 
   if GAMMA > 0:
     predictions = run_inference(next_state_batch)
     max_qs = predictions.max(axis=1)
-    max_qs[game_over_batch] = -1
-    targets += GAMMA * max_qs + GAMMA
-
-  # targets = np.minimum(targets, 1.0)
+    targets[good_action_batch] += GAMMA * max_qs[good_action_batch]
 
   return state_batch, targets, actions
 
@@ -190,7 +189,6 @@ def run_training():
         loss = write_summaries(session, run_inference, model, test_experiences,
                                summary_writer)
         print("Step:", global_step, "Loss:", loss)
-        # print('Average Score: %f' % evaluate(get_q_values))
 
 
 def write_summaries(session, run_inference, model, test_experiences,
@@ -208,21 +206,6 @@ def write_summaries(session, run_inference, model, test_experiences,
           actions_p: actions,})
   summary_writer.add_summary(summary_str, global_step)
   return loss
-
-
-def evaluate(get_q_values, verbose=False):
-  """Plays 100 games with greedy_strategy, returns average score."""
-
-  greedy_strategy = play.make_greedy_strategy(get_q_values)
-
-  if verbose:
-    play.play(greedy_strategy, True)
-
-  scores = []
-  for _ in range(100):
-    score, _ = play.play(greedy_strategy)
-    scores.append(score)
-  return np.average(scores)
 
 
 def main(_):
