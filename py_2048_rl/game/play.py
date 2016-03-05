@@ -67,11 +67,11 @@ def play(strategy, verbose=False, allow_unavailable_action=True):
       game.print_state()
 
     old_state = state
-    available_actions = game.available_actions()
     next_action = strategy(
-        old_state, range(4) if allow_unavailable_action else available_actions)
+        old_state, range(4) if allow_unavailable_action
+                            else game.available_actions())
 
-    if next_action in available_actions:
+    if game.is_action_available(next_action):
 
       reward = game.do_action(next_action)
       state = game.state().copy()

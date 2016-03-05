@@ -44,7 +44,11 @@ class Game(object):
 
   def game_over(self):
     """Whether the game is over."""
-    return len(self.available_actions()) == 0
+
+    for action in range(4):
+      if self.is_action_available(action):
+        return False
+    return True
 
   def available_actions(self):
     """Computes the set of actions that are available."""
