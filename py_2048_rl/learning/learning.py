@@ -28,7 +28,7 @@ START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
 BATCHES_KEEP_CONSTANT = 1e3
-NOT_LOST_KEEP_PROB = 0.05
+NOT_LOST_KEEP_PROB = 1.0
 
 RESUME = False
 TRAIN_DIR = "./train"
@@ -112,11 +112,12 @@ def experiences_to_batches(experiences, run_inference):
                               STATE_NORMALIZE_FACTOR)
     actions[i] = experience.action
     bad_action_batch[i] = experience.game_over or experience.not_available
+    targets[i] = np.count_nonzero(experience.state) - np.count_nonzero(experience.next_state)
 
   good_action_batch = np.logical_not(bad_action_batch)
 
-  targets[bad_action_batch] = -1
-  targets[good_action_batch] = 0
+  # targets[bad_action_batch] = -1
+  # targets[good_action_batch] = 0
 
   if GAMMA > 0:
     predictions = run_inference(next_state_batch)
