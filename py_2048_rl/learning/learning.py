@@ -23,7 +23,7 @@ REWARD_NORMALIZE_FACTOR = 1.0 / 25.0
 
 GAMMA = 0.0
 
-MEMORY_CAPACITY = 1e4
+MEMORY_CAPACITY = 1e5
 START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
@@ -31,7 +31,7 @@ BATCHES_KEEP_CONSTANT = 1e3
 NOT_LOST_KEEP_PROB = 1.0
 
 RESUME = False
-TRAIN_DIR = "./train"
+TRAIN_DIR = "./train_merged_256_256_adam_lr3_reproduce4_memcap5"
 
 def collect_experience(strategy, num_games=1):
   """Plays num_games random games, returns all collected experiences."""
