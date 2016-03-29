@@ -21,17 +21,39 @@ EXPERIENCE_SIZE = 10000
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
 REWARD_NORMALIZE_FACTOR = 1.0 / 25.0
 
-GAMMA = 0.0
+GAMMA = 0.50
 
 MEMORY_CAPACITY = 1e5
 START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
 BATCHES_KEEP_CONSTANT = 1e3
-NOT_LOST_KEEP_PROB = 0.05
+AVG_KEEP_PROB = 0.05
+MIN_KEEP_PROB = 0.02
+
 
 RESUME = False
-TRAIN_DIR = "./train"
+TRAIN_DIR = "./train_exponential_min02_lr4_gamma50"
+
+def get_keep_probability(index, length):
+  """Computes the keep probability for the experience with a given index.
+
+  First, the index is mapped to a value x between 0 and 1 (last index mapped to
+  0, index 0 mapped to 1). Then, the keep probability is computed by a function
+  keep_prob = e^(ax) + MIN_KEEP_PROB, such that the average probability is
+  AVG_KEEP_PROB.
+
+  For small AVG_KEEP_PROB, a can be approximated by
+  a = - 1 / (AVG_KEEP_PROB - MIN_KEEP_PROB).
+
+  Args:
+    index: zero-based index of the experience.
+    length: total number of experiences.
+  """
+
+  value = 1 - index / (length - 1)
+  return (math.e ** (- 1 / (AVG_KEEP_PROB - MIN_KEEP_PROB) * value) +
+          MIN_KEEP_PROB)
 
 def collect_experience(strategy, num_games=1):
   """Plays num_games random games, returns all collected experiences."""
@@ -39,8 +61,9 @@ def collect_experience(strategy, num_games=1):
   experiences = []
   for _ in range(num_games):
     _, new_experiences = play.play(strategy)
-    experiences += [e for e in new_experiences
-                    if e.game_over or np.random.rand() < NOT_LOST_KEEP_PROB]
+    experiences += [e for index, e in enumerate(new_experiences)
+                    if (np.random.rand() <
+                        get_keep_probability(index, len(new_experiences)))]
   return experiences
 
 
