@@ -33,13 +33,24 @@ NOT_LOST_KEEP_PROB = 0.05
 RESUME = False
 TRAIN_DIR = "./train"
 
+def deduplicate(experiences):
+  state_set = set()
+  filterted_experiences = []
+  for experience in experiences:
+    state_tuple = tuple(experience.state.flatten())
+    if not state_tuple in state_set:
+      state_set.add(state_tuple)
+      filterted_experiences.append(experience)
+  return filterted_experiences
+
 def collect_experience(strategy, num_games=1):
   """Plays num_games random games, returns all collected experiences."""
 
   experiences = []
   for _ in range(num_games):
     _, new_experiences = play.play(strategy)
-    experiences += [e for e in new_experiences
+    deduplicated_experiences = deduplicate(new_experiences)
+    experiences += [e for e in deduplicated_experiences
                     if e.game_over or np.random.rand() < NOT_LOST_KEEP_PROB]
   return experiences
 
