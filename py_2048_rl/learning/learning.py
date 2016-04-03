@@ -91,6 +91,11 @@ def get_batches(get_q_values, run_inference):
     for experience in collect_experience(play.random_strategy):
       add_to_memory(memory, experience)
 
+  print("Memory stats:")
+  print("  Experiences: ", len(memory))
+  print("  Unavailable: ", len([1 for e in memory if e.not_available]))
+  print("  Lost       : ", len([1 for e in memory if e.game_over]))
+
   for i in itertools.count():
     if i < START_DECREASE_EPSILON_GAMES:
       epsilon = 1.0
