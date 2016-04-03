@@ -55,15 +55,27 @@ def get_keep_probability(index, length):
   return (math.e ** (- 1 / (AVG_KEEP_PROB - MIN_KEEP_PROB) * value) +
           MIN_KEEP_PROB)
 
+def deduplicate(experiences):
+  state_set = set()
+  filterted_experiences = []
+  for experience in experiences:
+    state_tuple = tuple(experience.state.flatten())
+    if not state_tuple in state_set:
+      state_set.add(state_tuple)
+      filterted_experiences.append(experience)
+  return filterted_experiences
+
 def collect_experience(strategy, num_games=1):
   """Plays num_games random games, returns all collected experiences."""
 
   experiences = []
   for _ in range(num_games):
     _, new_experiences = play.play(strategy)
-    experiences += [e for index, e in enumerate(new_experiences)
+    deduplicated_experiences = deduplicate(new_experiences)
+    count = len(deduplicated_experiences)
+    experiences += [e for index, e in enumerate(deduplicated_experiences)
                     if (np.random.rand() <
-                        get_keep_probability(index, len(new_experiences)))]
+                        get_keep_probability(index, count))]
   return experiences
 
 
@@ -102,6 +114,11 @@ def get_batches(get_q_values, run_inference):
   while len(memory) < MEMORY_CAPACITY:
     for experience in collect_experience(play.random_strategy):
       add_to_memory(memory, experience)
+
+  print("Memory stats:")
+  print("  Experiences: ", len(memory))
+  print("  Unavailable: ", len([1 for e in memory if e.not_available]))
+  print("  Lost       : ", len([1 for e in memory if e.game_over]))
 
   for i in itertools.count():
     if i < START_DECREASE_EPSILON_GAMES:
