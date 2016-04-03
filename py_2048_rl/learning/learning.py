@@ -161,6 +161,8 @@ def experiences_to_batches(experiences, run_inference):
   if GAMMA > 0:
     predictions = run_inference(next_state_batch)
     max_qs = predictions.max(axis=1)
+    max_qs = np.maximum(max_qs, -1)
+    max_qs = np.minimum(max_qs, 0)
     targets[good_action_batch] += GAMMA * max_qs[good_action_batch]
 
   return state_batch, targets, actions
