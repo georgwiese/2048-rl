@@ -33,7 +33,7 @@ MIN_KEEP_PROB = 0.01
 
 
 RESUME = False
-TRAIN_DIR = "./train_exponential_min01_lr4_gamma00_nounavavilable"
+TRAIN_DIR = "./train_exponential_min01_avg04_lr4_gamma00_nounavavilable"
 
 def get_keep_probability(index, length):
   """Computes the keep probability for the experience with a given index.
