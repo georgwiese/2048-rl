@@ -13,7 +13,7 @@ class Experience(object):
   """Struct to encapsulate the experience of a single turn."""
 
   def __init__(self, state, action, reward, next_state, game_over,
-               not_available):
+               not_available, next_state_available_actions):
     """Initialize Experience
 
     Args:
@@ -24,6 +24,7 @@ class Experience(object):
           executed
       game_over: boolean, whether next_state is a terminal state
       not_available: boolean, whether action was not available from state
+      next_state_available_actions: Available actions from the next state
     """
     self.state = state
     self.action = action
@@ -31,10 +32,11 @@ class Experience(object):
     self.next_state = next_state
     self.game_over = game_over
     self.not_available = not_available
+    self.next_state_available_actions = next_state_available_actions
 
   def __str__(self):
     return str((self.state, self.action, self.reward, self.next_state,
-                self.game_over))
+                self.game_over, self.next_state_available_actions))
 
   def __repr__(self):
     return self.__str__()
@@ -82,10 +84,11 @@ def play(strategy, verbose=False, allow_unavailable_action=True):
         print("Reward:", reward)
 
       experiences.append(Experience(old_state, next_action, reward, state,
-                                    game_over, False))
+                                    game_over, False, game.available_actions()))
 
     else:
-      experiences.append(Experience(state, next_action, 0, state, False, True))
+      experiences.append(Experience(state, next_action, 0, state, False, True,
+                                    game.available_actions()))
 
   if verbose:
     print("Score:", game.score())
