@@ -9,11 +9,12 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
-HIDDEN_SIZES = [256, 256]
+HIDDEN_SIZES = [256, 256, 256]
 
 WEIGHT_INIT_SCALE = 0.01
 INIT_LEARNING_RATE = 1e-4
 LR_DECAY_PER_100K = 0.98
+KEEP_PROB = 0.5
 OPTIMIZER_CLASS = tf.train.AdamOptimizer
 ACTIVATION_FUNCTION = tf.nn.relu
 
@@ -72,7 +73,7 @@ def build_inference_graph(state_batch, hidden_sizes):
   for i, hidden_size in enumerate(hidden_sizes):
     weights_i, biases_i, hidden_output_i = build_fully_connected_layer(
         'hidden' + str(i), input_batch, input_size, hidden_size,
-        ACTIVATION_FUNCTION)
+        ACTIVATION_FUNCTION, KEEP_PROB)
 
     weights.append(weights_i)
     biases.append(biases_i)
@@ -92,7 +93,7 @@ def build_inference_graph(state_batch, hidden_sizes):
 
 
 def build_fully_connected_layer(name, input_batch, input_size, layer_size,
-                                activation_function=lambda x: x):
+                                activation_function=lambda x: x, keep_prob=1):
   """Builds a fully connected layer.
 
   Args:
@@ -112,12 +113,13 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size,
                           name='weights')
     biases = tf.Variable(tf.zeros([layer_size]), name='biases')
     output_batch = activation_function(tf.matmul(input_batch, weights) + biases)
+    output_dropout = tf.nn.dropout(output_batch, keep_prob)
 
     tf.histogram_summary("Weights " + name, weights)
     tf.histogram_summary("Biases " + name, biases)
     tf.histogram_summary("Activations " + name, output_batch)
 
-    return weights, biases, output_batch
+    return weights, biases, output_dropout
 
 
 def build_loss(q_values, targets, actions):
