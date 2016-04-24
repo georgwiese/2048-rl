@@ -9,13 +9,17 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
-HIDDEN_SIZES = [256, 256]
+HIDDEN_SIZES = [128]
 
 WEIGHT_INIT_SCALE = 0.01
 INIT_LEARNING_RATE = 1e-4
 LR_DECAY_PER_100K = 0.98
 OPTIMIZER_CLASS = tf.train.AdamOptimizer
 ACTIVATION_FUNCTION = tf.nn.relu
+
+# Convolution parameters
+CONV_FEATURES = 32
+INCEPTION_FEATURES = 32
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -62,12 +66,39 @@ def build_inference_graph(state_batch, hidden_sizes):
   Returns:
     q_values: Output tensor with the computed Q-Values.
   """
-  input_batch = state_batch
-  input_size = NUM_TILES
-
   weights = []
   biases = []
   activations = []
+
+  input_batch = tf.reshape(state_batch, [-1, 4, 4, 1])
+
+  # Incpetion layer
+
+  filter_tensor_inception, hidden_output_inception = build_conv_layer(
+      "Inception", input_batch, [1, 1, 1, INCEPTION_FEATURES],
+      ACTIVATION_FUNCTION)
+
+  weights.append(filter_tensor_inception)
+  activations.append(hidden_output_inception)
+
+  # Conv layer
+  input_batch = hidden_output_inception
+
+  filter_tensor_col, hidden_output_col = build_conv_layer(
+      "ColumnConv", input_batch, [4, 1, INCEPTION_FEATURES, CONV_FEATURES],
+      ACTIVATION_FUNCTION)
+  filter_tensor_row, hidden_output_row = build_conv_layer(
+      "RowConv", input_batch, [1, 4, INCEPTION_FEATURES, CONV_FEATURES],
+      ACTIVATION_FUNCTION)
+
+  weights += [filter_tensor_col, filter_tensor_row]
+  activations += [hidden_output_col, hidden_output_row]
+
+  # Input to fully connected layer is all conv features concatenated
+  input_batch = tf.concat(1, [
+      tf.reshape(hidden_output_col, [-1, 4 * CONV_FEATURES]),
+      tf.reshape(hidden_output_row, [-1, 4 * CONV_FEATURES])])
+  input_size = 8 * CONV_FEATURES
 
   for i, hidden_size in enumerate(hidden_sizes):
     weights_i, biases_i, hidden_output_i = build_fully_connected_layer(
@@ -91,6 +122,34 @@ def build_inference_graph(state_batch, hidden_sizes):
   return weights, biases, activations
 
 
+def build_conv_layer(name, input_batch, filter_size, activation_function):
+  """Builds a conv layer.
+
+  Args:
+    name: Name of the layer (-> Variable scope).
+    input_batch: [batch_size, height, width, 1] Tensor that this layer is
+        connected to.
+    filter_size: [filter_height, filter_width, input_depth, output_depth]
+    activation_function: Activation Function to use.
+
+  Returns:
+    [filter_tensor, output_batch], where output_batch is the
+    [batch_size, layer_height, layer_width, output_depth] output Tensor.
+  """
+
+  with tf.name_scope(name):
+    filter_tensor = tf.Variable(
+        tf.truncated_normal(filter_size), name="filter")
+    output_batch = tf.nn.conv2d(input_batch, filter_tensor,
+                                strides=[1, 1, 1, 1],
+                                padding="VALID")
+
+    tf.histogram_summary("Filter " + name, filter_tensor)
+    tf.histogram_summary("Activations " + name, output_batch)
+
+    return filter_tensor, output_batch
+
+
 def build_fully_connected_layer(name, input_batch, input_size, layer_size,
                                 activation_function=lambda x: x):
   """Builds a fully connected layer.
@@ -104,7 +163,8 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size,
     activation_function: Activation Function to use. Defaults to none.
 
   Returns:
-    The [batch_size, layer_size] output_batch Tensor.
+    [weights, biases, output_batch], where output_batch is the
+    [batch_size, layer_size] output Tensor.
   """
   with tf.name_scope(name):
     weights = tf.Variable(tf.truncated_normal([input_size, layer_size],
