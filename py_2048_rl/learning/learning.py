@@ -33,7 +33,7 @@ MIN_KEEP_PROB = 0.01
 
 
 RESUME = False
-TRAIN_DIR = "./train_exponential_min01_avg04_lr4_gamma00_nounavavilable"
+TRAIN_DIR = "./train_exponential_min01_avg04_lr4_gamma00_nounavavilable_trainloss"
 
 def get_keep_probability(index, length):
   """Computes the keep probability for the experience with a given index.
@@ -143,7 +143,7 @@ def get_batches(get_q_values, run_inference):
     for experience in collect_experience(strategy):
       add_to_memory(memory, experience)
       batch_experiences = random.sample(memory, BATCH_SIZE)
-      yield experiences_to_batches(batch_experiences, run_inference)
+      yield list(itertools.islice(memory, 0, 1000)), experiences_to_batches(batch_experiences, run_inference)
 
 
 def experiences_to_batches(experiences, run_inference):
@@ -225,9 +225,9 @@ def run_training():
     run_inference = make_run_inference(session, model)
     get_q_values = make_get_q_values(session, model)
 
-    test_experiences = collect_experience(play.random_strategy, 100)
+    #test_experiences = collect_experience(play.random_strategy, 100)
 
-    for state_batch, targets, actions in get_batches_stepwise(
+    for test_experiences, (state_batch, targets, actions) in get_batches_stepwise(
         get_q_values, run_inference):
 
       global_step, _ = session.run([model.global_step, model.train_op],
