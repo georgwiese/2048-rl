@@ -36,6 +36,7 @@ class ExperienceCollector(object):
     return (math.e ** (- 1 / (AVG_KEEP_PROB - MIN_KEEP_PROB) * value) +
             MIN_KEEP_PROB)
 
+
   def deduplicate(self, experiences):
     """Returns a new experience array that contains contains no duplicates."""
 
@@ -47,6 +48,7 @@ class ExperienceCollector(object):
         state_set.add(state_tuple)
         filterted_experiences.append(experience)
     return filterted_experiences
+
 
   def collect(self, strategy, num_games=1):
     """Plays num_games random games, returns all collected experiences."""

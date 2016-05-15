@@ -79,17 +79,16 @@ def run_training():
 
       if global_step % 10000 == 0 and global_step != 0:
         saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
-        loss = write_summaries(session, run_inference, model, test_experiences,
+        loss = write_summaries(session, batcher, model, test_experiences,
                                summary_writer)
         print("Step:", global_step, "Loss:", loss)
 
 
-def write_summaries(session, run_inference, model, test_experiences,
-                    summary_writer):
+def write_summaries(session, batcher, model, test_experiences, summary_writer):
   """Writes summaries by running the model on test_experiences. Returns loss."""
 
-  state_batch, targets, actions = experiences_to_batches(
-      test_experiences, run_inference)
+  state_batch, targets, actions = batcher.experiences_to_batches(
+      test_experiences)
   state_batch_p, targets_p, actions_p = model.placeholders
   summary_str, global_step, loss = session.run(
       [model.summary_op, model.global_step, model.loss],
