@@ -19,10 +19,10 @@ class ExperienceCollector(object):
   def get_keep_probability(self, index, length):
     """Computes the keep probability for the experience with a given index.
 
-    First, the index is mapped to a value x between 0 and 1 (last index mapped to
-    0, index 0 mapped to 1). Then, the keep probability is computed by a function
-    keep_prob = e^(ax) + MIN_KEEP_PROB, such that the average probability is
-    AVG_KEEP_PROB.
+    First, the index is mapped to a value x between 0 and 1 (last index mapped
+    to 0, index 0 mapped to 1). Then, the keep probability is computed by a
+    function keep_prob = e^(ax) + MIN_KEEP_PROB, such that the average
+    probability is AVG_KEEP_PROB.
 
     For small AVG_KEEP_PROB, a can be approximated by
     a = - 1 / (AVG_KEEP_PROB - MIN_KEEP_PROB).

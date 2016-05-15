@@ -26,6 +26,7 @@ class ReplayMemory(object):
 
 
   def print_stats(self):
+    """Print memory stats."""
 
     total = len(self.queue)
     unavailable = len([1 for e in self.queue if e.not_available])
@@ -39,6 +40,7 @@ class ReplayMemory(object):
 
 
   def is_full(self):
+    """Return whether the memory is full."""
 
     return len(self.queue) >= MEMORY_CAPACITY
 
