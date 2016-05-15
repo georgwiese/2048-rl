@@ -17,13 +17,13 @@ def test_play(game_class_mock):
   game = game_class_mock.return_value
   game.game_over.side_effect = [False, False, True]
   game.state.side_effect = [state1, state2, state3]
-  game.available_actions.side_effect = [[1, 2, 3], [0, 1, 2]]
+  game.available_actions.side_effect = [[1, 2, 3], [0, 1, 2], [0, 1, 2], []]
   game.do_action.side_effect = [1, 2]
   game.score.return_value = 1234
 
   strategy = Mock(side_effect=[1, 2])
 
-  score, experiences = play(strategy)
+  score, experiences = play(strategy, allow_unavailable_action=False)
 
   game.do_action.assert_has_calls([call(1), call(2)])
   # Manually need to check strategy arguments, because numpy array overrides
@@ -42,12 +42,14 @@ def test_play(game_class_mock):
   assert experiences[0].reward == 1
   assert (experiences[0].next_state == state2).all()
   assert experiences[0].game_over == False
+  assert experiences[0].next_state_available_actions == [0, 1, 2]
 
   assert (experiences[1].state == state2).all()
   assert experiences[1].action == 2
   assert experiences[1].reward == 2
   assert (experiences[1].next_state == state3).all()
   assert experiences[1].game_over == True
+  assert experiences[1].next_state_available_actions == []
 
 
 def test_highest_reward_strategy():
