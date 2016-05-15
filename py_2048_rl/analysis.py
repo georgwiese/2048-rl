@@ -6,6 +6,7 @@ from __future__ import print_function
 
 from py_2048_rl.game import play
 from py_2048_rl.learning import learning
+from py_2048_rl.learning.experience_collector import ExperienceCollector
 from py_2048_rl.learning.model import FeedModel
 
 import tensorflow as tf
@@ -24,8 +25,7 @@ def get_all_q_values(train_dir):
   saver.restore(session, tf.train.latest_checkpoint(train_dir))
 
   get_q_values = learning.make_get_q_values(session, model)
-  experiences = learning.collect_experience(play.random_strategy, 100)
-  learning.print_memory_stats(experiences)
+  experiences = ExperienceCollector().collect(play.random_strategy, 100)
 
   all_q_values = []
   for experience in experiences:
