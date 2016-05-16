@@ -57,3 +57,10 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Sublime Files
+*.sublime-project
+*.sublime-workspace
+
+# Experiment Directories
+*_experiments_*

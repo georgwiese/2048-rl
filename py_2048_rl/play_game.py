@@ -8,10 +8,10 @@ from py_2048_rl.game import play
 from py_2048_rl.learning import learning
 from py_2048_rl.learning.model import FeedModel
 
+import sys
+
 import tensorflow as tf
 import numpy as np
-
-TRAIN_DIR = "./train"
 
 
 def average_score(strategy):
@@ -38,19 +38,35 @@ def make_greedy_strategy(train_dir, verbose=False):
   return greedy_strategy
 
 
-def play_game():
-  """Play a single game using the latest model snapshot in TRAIN_DIR."""
+def play_single_game(train_dir):
+  """Play a single game using the latest model snapshot in train_dir."""
 
-  # s, _ = play.play(make_greedy_strategy(TRAIN_DIR, True),
-  #                  allow_unavailable_action=False)
-  # print(s)
-  print("Average Score: ", average_score(make_greedy_strategy(TRAIN_DIR)))
+  s, _ = play.play(make_greedy_strategy(train_dir, True),
+                   allow_unavailable_action=False)
+  print(s)
 
 
-def main(_):
+def print_average_score(train_dir):
+  """Prints the average score of 100 games."""
+
+  print("Average Score: ", average_score(make_greedy_strategy(train_dir)))
+
+
+def main(args):
   """Main function."""
 
-  play_game()
+  if len(args) != 3:
+    print("Usage: %s (single|avg) train_dir" % args[0])
+    sys.exit(1)
+
+  _, mode, train_dir = args
+
+  if mode == "single":
+    play_single_game(train_dir)
+  elif mode == "avg":
+    print_average_score(train_dir)
+  else:
+    print("Unknown mode:", mode)
 
 
 if __name__ == '__main__':
