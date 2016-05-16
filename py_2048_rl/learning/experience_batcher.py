@@ -14,10 +14,13 @@ from py_2048_rl.learning.target_batch_computer import TargetBatchComputer
 
 BATCH_SIZE = 32
 
+# Number of batches for which the model is kept constant
+BATCHES_KEEP_CONSTANT = 1e3
+
+# Parameters for epsilon (for epsilon-greedy play)
 START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
 MIN_EPSILON = 1.0
-BATCHES_KEEP_CONSTANT = 1e3
 
 
 class ExperienceBatcher(object):

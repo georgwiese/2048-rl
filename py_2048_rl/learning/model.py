@@ -9,13 +9,16 @@ import tensorflow as tf
 NUM_TILES = 16
 NUM_ACTIONS = 4
 
+# Number of hidden units in each hidden layer
 HIDDEN_SIZES = [256, 256]
 
-WEIGHT_INIT_SCALE = 0.01
-INIT_LEARNING_RATE = 1e-4
-LR_DECAY_PER_100K = 0.98
 OPTIMIZER_CLASS = tf.train.AdamOptimizer
 ACTIVATION_FUNCTION = tf.nn.relu
+WEIGHT_INIT_SCALE = 0.01
+
+# Learning Rate Parameters
+INIT_LEARNING_RATE = 1e-4
+LR_DECAY_PER_100K = 0.98
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods

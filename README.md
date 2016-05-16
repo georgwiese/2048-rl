@@ -48,7 +48,13 @@ Here's a comprehensive list of the modules:
 ## Run Training
 
 Step 1 is to set various parameters.
-For example, you might want to adjust the training directory in `learning.py`, the `GAMMA` value in `experience_batcher.py` or model parameters & the learning rate in `model.py`.
+
+For example, you might want to adjust
+- The training directory in `learning.py`
+- The `GAMMA` value in `target_value_computer.py`
+- The `INIT_LEARNING_RATE` or `HIDDEN_SIZES` in `model.py`
+- The `MIN_EPSILON` in `experience_batcher.py`
+- ...
 
 Once that's done, you can simple run `python py_2048_rl/learning.py`.
 
