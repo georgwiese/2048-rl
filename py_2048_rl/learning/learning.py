@@ -4,19 +4,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
+import os
+
+import tensorflow as tf
+import numpy as np
+
 from py_2048_rl.game import play
 from py_2048_rl.learning.experience_batcher import ExperienceBatcher
 from py_2048_rl.learning.experience_collector import ExperienceCollector
 from py_2048_rl.learning.model import FeedModel
 
-import tensorflow as tf
-import numpy as np
-
 
 STATE_NORMALIZE_FACTOR = 1.0 / 15.0
-
-RESUME = False
-TRAIN_DIR = "./train"
 
 
 def make_run_inference(session, model):
@@ -42,22 +42,24 @@ def make_get_q_values(session, model):
   return get_q_values
 
 
-def run_training():
+def run_training(train_dir):
   """Run training"""
 
-  print("Train dir: ", TRAIN_DIR)
+  resume = os.path.exists(train_dir)
 
   with tf.Graph().as_default():
     model = FeedModel()
     saver = tf.train.Saver()
     session = tf.Session()
-    summary_writer = tf.train.SummaryWriter(TRAIN_DIR,
+    summary_writer = tf.train.SummaryWriter(train_dir,
                                             graph_def=session.graph_def,
                                             flush_secs=10)
 
-    if RESUME:
-      saver.restore(session, tf.train.latest_checkpoint(TRAIN_DIR))
+    if resume:
+      print("Resuming: ", train_dir)
+      saver.restore(session, tf.train.latest_checkpoint(train_dir))
     else:
+      print("Starting new training: ", train_dir)
       session.run(model.init)
 
     run_inference = make_run_inference(session, model)
@@ -78,7 +80,7 @@ def run_training():
               model.actions_placeholder: actions,})
 
       if global_step % 10000 == 0 and global_step != 0:
-        saver.save(session, TRAIN_DIR + "/checkpoint", global_step=global_step)
+        saver.save(session, train_dir + "/checkpoint", global_step=global_step)
         loss = write_summaries(session, batcher, model, test_experiences,
                                summary_writer)
         print("Step:", global_step, "Loss:", loss)
@@ -100,10 +102,14 @@ def write_summaries(session, batcher, model, test_experiences, summary_writer):
   return loss
 
 
-def main(_):
+def main(args):
   """Main function."""
 
-  run_training()
+  if len(args) != 2:
+    print("Usage: %s train_dir" % args[0])
+    sys.exit(1)
+
+  run_training(args[1])
 
 
 if __name__ == '__main__':

@@ -13,8 +13,6 @@ import sys
 import tensorflow as tf
 import numpy as np
 
-TRAIN_DIR = "./train"
-
 
 def average_score(strategy):
   """Plays 100 games, returns average score."""
@@ -40,31 +38,35 @@ def make_greedy_strategy(train_dir, verbose=False):
   return greedy_strategy
 
 
-def play_single_game():
-  """Play a single game using the latest model snapshot in TRAIN_DIR."""
+def play_single_game(train_dir):
+  """Play a single game using the latest model snapshot in train_dir."""
 
-  s, _ = play.play(make_greedy_strategy(TRAIN_DIR, True),
+  s, _ = play.play(make_greedy_strategy(train_dir, True),
                    allow_unavailable_action=False)
   print(s)
 
 
-def print_average_score():
+def print_average_score(train_dir):
   """Prints the average score of 100 games."""
 
-  print("Average Score: ", average_score(make_greedy_strategy(TRAIN_DIR)))
+  print("Average Score: ", average_score(make_greedy_strategy(train_dir)))
 
 
 def main(args):
   """Main function."""
 
-  if len(args) < 2:
-    print("Usage: %s (single|avg)" % args[0])
+  if len(args) != 3:
+    print("Usage: %s (single|avg) train_dir" % args[0])
     sys.exit(1)
 
-  if args[1] == "single":
-    play_single_game()
-  elif args[1] == "avg":
-    print_average_score()
+  _, mode, train_dir = args
+
+  if mode == "single":
+    play_single_game(train_dir)
+  elif mode == "avg":
+    print_average_score(train_dir)
+  else:
+    print("Unknown mode:", mode)
 
 
 if __name__ == '__main__':

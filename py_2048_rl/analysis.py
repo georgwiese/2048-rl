@@ -4,16 +4,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from py_2048_rl.game import play
-from py_2048_rl.learning import learning
-from py_2048_rl.learning.experience_collector import ExperienceCollector
-from py_2048_rl.learning.model import FeedModel
+import sys
 
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
-TRAIN_DIR = "./train"
+from py_2048_rl.game import play
+from py_2048_rl.learning import learning
+from py_2048_rl.learning.experience_collector import ExperienceCollector
+from py_2048_rl.learning.model import FeedModel
 
 
 def get_all_q_values(train_dir):
@@ -34,17 +34,21 @@ def get_all_q_values(train_dir):
   return all_q_values
 
 
-def analyze():
+def analyze(train_dir):
   """Plot all Q-Values."""
 
-  plt.hist(get_all_q_values(TRAIN_DIR))
+  plt.hist(get_all_q_values(train_dir))
   plt.show()
 
 
-def main(_):
+def main(args):
   """Main function."""
 
-  analyze()
+  if len(args) != 2:
+    print("Usage: %s train_dir" % args[0])
+    sys.exit(1)
+
+  analyze(args[1])
 
 
 if __name__ == '__main__':
