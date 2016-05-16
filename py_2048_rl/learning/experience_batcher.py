@@ -9,10 +9,10 @@ import itertools
 
 from py_2048_rl.game import play
 from py_2048_rl.learning.replay_memory import ReplayMemory
+from py_2048_rl.learning.target_batch_computer import TargetBatchComputer
 
 
 BATCH_SIZE = 32
-GAMMA = 0.00
 
 START_DECREASE_EPSILON_GAMES = 200000
 DECREASE_EPSILON_GAMES = 100000.0
@@ -82,10 +82,10 @@ class ExperienceBatcher(object):
     """Computes state_batch, targets, actions."""
 
     batch_size = len(experiences)
-    state_batch = np.zeros((batch_size, 16))
-    next_state_batch = np.zeros((batch_size, 16))
-    targets = np.zeros((batch_size,), dtype=np.float)
+    state_batch = np.zeros((batch_size, 16), dtype=np.float)
+    next_state_batch = np.zeros((batch_size, 16), dtype=np.float)
     actions = np.zeros((batch_size,), dtype=np.int)
+    reward_batch = np.zeros((batch_size,), dtype=np.float)
     bad_action_batch = np.zeros((batch_size,), dtype=np.bool)
     available_actions_batch = np.zeros((batch_size, 4), dtype=np.bool)
 
@@ -95,20 +95,12 @@ class ExperienceBatcher(object):
       next_state_batch[i, :] = (experience.next_state.flatten() *
                                 self.state_normalize_factor)
       actions[i] = experience.action
+      reward_batch[i] = experience.reward
       bad_action_batch[i] = experience.game_over or experience.not_available
       available_actions_batch[i, experience.next_state_available_actions] = True
 
-    good_action_batch = np.logical_not(bad_action_batch)
-
-    targets[bad_action_batch] = -1
-    targets[good_action_batch] = 0
-
-    if GAMMA > 0:
-      predictions = self.run_inference(next_state_batch)
-      predictions[np.logical_not(available_actions_batch)] = -1
-      max_qs = predictions.max(axis=1)
-      max_qs = np.maximum(max_qs, -1)
-      max_qs = np.minimum(max_qs, 0)
-      targets[good_action_batch] += GAMMA * max_qs[good_action_batch]
+    targets = TargetBatchComputer(self.run_inference).compute(
+        reward_batch, bad_action_batch, next_state_batch,
+        available_actions_batch)
 
     return state_batch, targets, actions

@@ -35,6 +35,7 @@ def get_all_q_values(train_dir):
 
 
 def analyze():
+  """Plot all Q-Values."""
 
   plt.hist(get_all_q_values(TRAIN_DIR))
   plt.show()

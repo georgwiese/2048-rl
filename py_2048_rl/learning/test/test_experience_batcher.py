@@ -1,16 +1,19 @@
-"""Tests for Learning Algorithms."""
+"""Tests for ExperienceBatcher."""
 
 from py_2048_rl.game.play import Experience
-from py_2048_rl.learning import experience_batcher
+from py_2048_rl.learning.experience_batcher import ExperienceBatcher
 
-from mock import Mock
+from mock import Mock, patch
 
 import numpy as np
 
 # pylint: disable=missing-docstring
 
-def test_experiences_to_batches():
-  experience_batcher.GAMMA = 0.5
+
+@patch('py_2048_rl.learning.experience_batcher.TargetBatchComputer')
+def test_experiences_to_batches(target_computer_class_mock):
+  compute = target_computer_class_mock.return_value.compute
+  compute.return_value = np.array([42, 43])
 
   state1 = np.arange(16).reshape((4, 4)) + 1
   state2 = np.arange(16).reshape((4, 4)) + 2
@@ -21,19 +24,23 @@ def test_experiences_to_batches():
   run_inference = Mock(side_effect=[np.array([[0, 0, 0, -0.5],
                                               [0, 0, 0, 0]])])
 
-  batcher = experience_batcher.ExperienceBatcher(None, run_inference, None,
-                                                 1.0 / 15.0)
+  batcher = ExperienceBatcher(None, run_inference, None, 1.0 / 15.0)
 
   state_batch, targets, actions = batcher.experiences_to_batches(experiences)
 
+  reward_batch = np.array([2, 4])
+  bad_action_batch = np.array([False, True])
   next_state_batch = np.array([state2.flatten(), state3.flatten()]) / 15.0
-  assert (run_inference.call_args_list[0][0][0] == next_state_batch).all()
+  available_actions_batch = np.array([[False, False, False, True],
+                                      [False, False, False, False]])
+
+  assert (compute.call_args_list[0][0][0] == reward_batch).all()
+  assert (compute.call_args_list[0][0][1] == bad_action_batch).all()
+  assert (compute.call_args_list[0][0][2] == next_state_batch).all()
+  assert (compute.call_args_list[0][0][3] == available_actions_batch).all()
 
   expected_state_batch = np.array([state1.flatten(), state2.flatten()]) / 15.0
+
   assert (state_batch == expected_state_batch).all()
-
-  # Targets should be -0.25 (0 reward + 0.5 * (-0.5) max Q) and -1
-  # (-1 reward, final state).
-  assert (targets == np.array([-0.25, -1])).all()
-
+  assert (targets == np.array([42, 43])).all()
   assert (actions == np.array([1, 3])).all()
