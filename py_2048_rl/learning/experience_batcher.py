@@ -13,6 +13,7 @@ from py_2048_rl.learning.target_batch_computer import TargetBatchComputer
 
 
 BATCH_SIZE = 32
+KEEP_BATCH_PERIOD = 1
 
 # Number of batches for which the model is kept constant
 BATCHES_KEEP_CONSTANT = 1e3
@@ -42,7 +43,11 @@ class ExperienceBatcher(object):
 
     cache = []
 
-    for batches in self.get_batches():
+    for i, batches in enumerate(self.get_batches()):
+
+      if i % KEEP_BATCH_PERIOD != 0:
+        continue
+
       cache.append(batches)
 
       if len(cache) >= BATCHES_KEEP_CONSTANT:
