@@ -8,6 +8,7 @@ import numpy as np
 
 
 GAMMA = 0.00
+MERGED_REWARD_FACTOR = 0.0
 
 
 class TargetBatchComputer(object):
@@ -23,7 +24,7 @@ class TargetBatchComputer(object):
 
 
   def compute(self, reward_batch, bad_action_batch, next_state_batch,
-              available_actions_batch):
+              available_actions_batch, merged):
     """Computes the target batch for the neural network.
 
     Args:
@@ -37,6 +38,8 @@ class TargetBatchComputer(object):
           the network for inference.
       available_actions_batch: A (batch_size, 4) bool array that stores which
           actions are available from the next state.
+      merged: A (batch_size,) float numpy array that contains how many tiles
+          have been merged at tha current experience.
 
     Returns:
       A (batch_size,) float numpy array that contains the target values for the
@@ -49,14 +52,14 @@ class TargetBatchComputer(object):
     good_action_batch = np.logical_not(bad_action_batch)
 
     targets[bad_action_batch] = -1
-    targets[good_action_batch] = 0
+    targets[good_action_batch] = (merged[good_action_batch] *
+                                  MERGED_REWARD_FACTOR)
 
     if GAMMA > 0:
       predictions = self.run_inference(next_state_batch)
       predictions[np.logical_not(available_actions_batch)] = -1
       max_qs = predictions.max(axis=1)
       max_qs = np.maximum(max_qs, -1)
-      max_qs = np.minimum(max_qs, 0)
       targets[good_action_batch] += GAMMA * max_qs[good_action_batch]
 
     return targets

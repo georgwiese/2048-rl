@@ -91,6 +91,7 @@ class ExperienceBatcher(object):
     reward_batch = np.zeros((batch_size,), dtype=np.float)
     bad_action_batch = np.zeros((batch_size,), dtype=np.bool)
     available_actions_batch = np.zeros((batch_size, 4), dtype=np.bool)
+    merged = np.zeros((batch_size,), dtype=np.float)
 
     for i, experience in enumerate(experiences):
       state_batch[i, :] = (experience.state.flatten() *
@@ -101,9 +102,11 @@ class ExperienceBatcher(object):
       reward_batch[i] = experience.reward
       bad_action_batch[i] = experience.game_over or experience.not_available
       available_actions_batch[i, experience.next_state_available_actions] = True
+      merged[i] = (np.count_nonzero(experience.state) -
+                   np.count_nonzero(experience.next_state) + 1)
 
     targets = TargetBatchComputer(self.run_inference).compute(
         reward_batch, bad_action_batch, next_state_batch,
-        available_actions_batch)
+        available_actions_batch, merged)
 
     return state_batch, targets, actions
