@@ -10,6 +10,7 @@ import math
 from py_2048_rl.game import play
 
 # Parameters for undersampling
+DO_UNDERSAMPLING = True
 AVG_KEEP_PROB = 0.04
 MIN_KEEP_PROB = 0.01
 
@@ -32,6 +33,8 @@ class ExperienceCollector(object):
       index: zero-based index of the experience.
       length: total number of experiences.
     """
+    if not DO_UNDERSAMPLING:
+      return 1.0
 
     value = 1 - index / (length - 1)
     return (math.e ** (- 1 / (AVG_KEEP_PROB - MIN_KEEP_PROB) * value) +
