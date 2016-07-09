@@ -9,6 +9,7 @@ import numpy as np
 
 GAMMA = 0.00
 MERGED_REWARD_FACTOR = 0.0
+LOST_REWARD = -1.0
 
 
 class TargetBatchComputer(object):
@@ -51,13 +52,14 @@ class TargetBatchComputer(object):
 
     good_action_batch = np.logical_not(bad_action_batch)
 
-    targets[bad_action_batch] = -1
+    targets[bad_action_batch] = LOST_REWARD
     targets[good_action_batch] = (merged[good_action_batch] *
                                   MERGED_REWARD_FACTOR)
 
     if GAMMA > 0:
       predictions = self.run_inference(next_state_batch)
-      predictions[np.logical_not(available_actions_batch)] = -1
+      # Remove non-available predictions
+      predictions[np.logical_not(available_actions_batch)] = -1e8
       max_qs = predictions.max(axis=1)
       max_qs = np.maximum(max_qs, -1)
       targets[good_action_batch] += GAMMA * max_qs[good_action_batch]
