@@ -116,9 +116,9 @@ def highest_reward_strategy(state, actions):
   """
 
   sorted_actions = np.sort(actions)[::-1]
-  rewards = map(lambda action: Game(np.copy(state)).do_action(action),
-                sorted_actions)
-  action_index = np.argsort(rewards, kind="mergesort")[-1]
+  rewards = [Game(np.copy(state)).do_action(action)
+             for action in sorted_actions]
+  action_index = np.argsort(rewards)[-1]
   return sorted_actions[action_index]
 
 def make_greedy_strategy(get_q_values, verbose=False):

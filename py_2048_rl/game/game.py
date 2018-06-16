@@ -143,10 +143,10 @@ class Game(object):
         return '% 5d' % (2 ** value,)
       return "     "
 
-    print "-" * 25
+    print("-" * 25)
     for row in range(4):
-      print "|" + "|".join([tile_string(v) for v in self._state[row, :]]) + "|"
-      print "-" * 25
+      print("|" + "|".join([tile_string(v) for v in self._state[row, :]]) + "|")
+      print("-" * 25)
 
   def state(self):
     """Return current state."""
