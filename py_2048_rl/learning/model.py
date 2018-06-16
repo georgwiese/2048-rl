@@ -42,15 +42,15 @@ class FeedModel(object):
     self.train_op, self.global_step, self.learning_rate = (
         build_train_op(self.loss))
 
-    tf.scalar_summary("Average Target",
+    tf.summary.scalar("Average Target",
                       tf.reduce_mean(self.targets_placeholder))
-    tf.scalar_summary("Learning Rate", self.learning_rate)
-    tf.scalar_summary("Loss", self.loss)
-    tf.histogram_summary("States", self.state_batch_placeholder)
-    tf.histogram_summary("Targets", self.targets_placeholder)
+    tf.summary.scalar("Learning Rate", self.learning_rate)
+    tf.summary.scalar("Loss", self.loss)
+    tf.summary.histogram("States", self.state_batch_placeholder)
+    tf.summary.histogram("Targets", self.targets_placeholder)
 
     self.init = tf.initialize_all_variables()
-    self.summary_op = tf.merge_all_summaries()
+    self.summary_op = tf.summary.merge_all()
 
 
 def build_inference_graph(state_batch, hidden_sizes):
@@ -116,9 +116,9 @@ def build_fully_connected_layer(name, input_batch, input_size, layer_size,
     biases = tf.Variable(tf.zeros([layer_size]), name='biases')
     output_batch = activation_function(tf.matmul(input_batch, weights) + biases)
 
-    tf.histogram_summary("Weights " + name, weights)
-    tf.histogram_summary("Biases " + name, biases)
-    tf.histogram_summary("Activations " + name, output_batch)
+    tf.summary.histogram("Weights " + name, weights)
+    tf.summary.histogram("Biases " + name, biases)
+    tf.summary.histogram("Activations " + name, output_batch)
 
     return weights, biases, output_batch
 

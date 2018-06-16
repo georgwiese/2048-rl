@@ -51,9 +51,9 @@ def run_training(train_dir):
     model = FeedModel()
     saver = tf.train.Saver()
     session = tf.Session()
-    summary_writer = tf.train.SummaryWriter(train_dir,
-                                            graph_def=session.graph_def,
-                                            flush_secs=10)
+    summary_writer = tf.summary.FileWriter(train_dir,
+                                           graph_def=session.graph_def,
+                                           flush_secs=10)
 
     if resume:
       print("Resuming: ", train_dir)

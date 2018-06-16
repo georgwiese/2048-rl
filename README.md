@@ -56,7 +56,7 @@ For example, you might want to adjust
 - The `MIN_EPSILON` in `experience_batcher.py`
 - ...
 
-Once that's done, you can simple run `python py_2048_rl/learning.py <train_dir>`.
+Once that's done, you can simple run `python py_2048_rl/learning/learning.py <train_dir>`.
 
 ## Analyzing the Model
 
