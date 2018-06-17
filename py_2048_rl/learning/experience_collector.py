@@ -10,7 +10,7 @@ import math
 from py_2048_rl.game import play
 
 # Parameters for undersampling
-DO_UNDERSAMPLING = True
+DO_UNDERSAMPLING = False
 AVG_KEEP_PROB = 0.04
 MIN_KEEP_PROB = 0.01
 

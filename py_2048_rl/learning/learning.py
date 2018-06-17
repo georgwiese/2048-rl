@@ -79,7 +79,7 @@ def run_training(train_dir):
               model.targets_placeholder: targets,
               model.actions_placeholder: actions,})
 
-      if global_step % 10000 == 0 and global_step != 0:
+      if global_step % 1e3 == 0 and global_step != 0:
         saver.save(session, train_dir + "/checkpoint", global_step=global_step)
         loss = write_summaries(session, batcher, model, test_experiences,
                                summary_writer)

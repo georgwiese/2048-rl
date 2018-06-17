@@ -7,9 +7,9 @@ from __future__ import print_function
 import numpy as np
 
 
-GAMMA = 0.00
-MERGED_REWARD_FACTOR = 0.0
-LOST_REWARD = -1.0
+GAMMA = 0.5
+MERGED_REWARD_FACTOR = 1.0
+LOST_REWARD = 0.0
 
 
 class TargetBatchComputer(object):

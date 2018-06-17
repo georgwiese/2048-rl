@@ -7,7 +7,7 @@ from __future__ import print_function
 from collections import deque
 import random
 
-MEMORY_CAPACITY = 1e5
+MEMORY_CAPACITY = 1e4
 
 class ReplayMemory(object):
   """Keeps a set of Experiences in a Queue"""
